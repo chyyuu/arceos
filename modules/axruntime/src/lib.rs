@@ -142,6 +142,8 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
 fn init_drivers() {
     info!("Initialize drivers...");
     axdriver::init_drivers();
+    info!("Initialize filesystems...");
+    axfs::init_filesystems();
 }
 
 #[cfg(feature = "multitask")]

@@ -6,6 +6,7 @@ members = [
     "apps/helloworld",
     "apps/memtest",
     "apps/multitask",
+    "apps/hellofs",
 
     "crates/allocator",
     "crates/crate_interface",
@@ -17,6 +18,8 @@ members = [
     "crates/memory_addr",
     "crates/page_table",
     "crates/scheduler",
+    "crates/vfscore",
+    "crates/fatfs-shim",
 
     "modules/axalloc",
     "modules/axconfig",
@@ -25,4 +28,5 @@ members = [
     "modules/axhal",
     "modules/axruntime",
     "modules/axtask",
+    "modules/axfs"
 ]
