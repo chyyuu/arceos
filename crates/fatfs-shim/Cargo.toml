@@ -14,3 +14,4 @@ fatfs = { git = "https://github.com/rafalh/rust-fatfs", rev = "a3a834e", default
     "unicode",
 ] }
 spin = "0.9"
+log = "0.4"

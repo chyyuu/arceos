@@ -2,13 +2,15 @@
 
 #[macro_use]
 extern crate alloc;
+#[macro_use]
+extern crate log;
 
 use core::marker::PhantomData;
 use alloc::{boxed::Box, sync::Arc};
 use alloc::vec::Vec;
 use alloc::string::String;
 
-use fatfs::{NullTimeProvider, LossyOemCpConverter, File, Dir, Read, Seek, Write, FileSystem};
+use fatfs::{NullTimeProvider, LossyOemCpConverter, File, Dir, Read, Seek, Write, FileSystem, SeekFrom, info};
 use spin::Mutex;
 use vfscore::{DiskOperation, VfsFileSystem, VfsFile};
 
@@ -20,14 +22,7 @@ unsafe impl<T: DiskOperation> Sync for Fat32FileSystem<T> {}
 
 impl<T: DiskOperation + 'static> VfsFileSystem for Fat32FileSystem<T> {
     fn root(&'static self) -> Box<dyn vfscore::VfsFile> {
-        Box::new(Inode::new_dir(self.0.root_dir()))
-    }
-
-    fn open(&'static self, path: &str) -> Option<Box<dyn vfscore::VfsFile>> {
-        match self.0.root_dir().open_file(path) {
-            Ok(file) => Some(Box::new(Inode::new_file(file))),
-            Err(_) => None
-        }
+        Inode::new_dir(self.0.root_dir())
     }
 
     fn name(&'static self) -> &'static str {
@@ -54,6 +49,23 @@ pub enum Inode<T: DiskOperation + 'static> {
 }
 
 impl<T: DiskOperation> VfsFile for Inode<T> {
+    fn open(&self, path: &str) -> Option<Box<dyn vfscore::VfsFile>> {
+        match self {
+            Inode::File(_) => None,
+            Inode::Dir(dir) => {
+                info!("t1");
+                let dir = dir.lock();
+                if let Ok(f) = dir.open_file(path) {
+                    Some(Inode::new_file(f))
+                } else if let Ok(d) = dir.open_dir(path) {
+                    Some(Inode::new_dir(d))
+                } else {
+                    None
+                }
+            },
+        }
+    }
+
     fn read_dir(&self) -> Vec<String> {
         match self {
             Inode::File(_) => vec![],
@@ -76,7 +88,9 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
                 let mut file = file.lock();
                 let file_size = file.seek(fatfs::SeekFrom::End(0)).unwrap();
                 file.seek(fatfs::SeekFrom::Start(0)).expect("can't seek file");
-                file.read_exact(buf).expect("can't read file");
+                // 注释掉
+                // file.read_exact(buf).expect("can't read file");
+                file.read_exact(buf);
                 file_size as usize
             },
             Inode::Dir(_) => 0, 
@@ -97,15 +111,47 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
     fn close(&self) {
         // close file
     }
+
+    fn mkdir(&self, folder_name: &str) -> Option<Box<dyn VfsFile>> {
+        match self {
+            Inode::File(_file) => None,
+            Inode::Dir(dir) => {
+                let file = dir.lock().create_dir(folder_name).map(Inode::new_dir);
+                file.map(Some).unwrap_or(None)
+            },
+        }
+    }
+
+    fn create(&self, file_name: &str) -> Option<Box<dyn VfsFile>> {
+        match self {
+            Inode::File(_file) => None,
+            Inode::Dir(dir) => {
+                let file = dir.lock().create_file(file_name).map(Inode::new_file);
+                file.map(Some).unwrap_or(None)
+            },
+        }
+    }
+
+    fn seek(&self, seek: vfscore::SeekFrom) -> usize {
+        if let Inode::File(f) = self {
+            match seek {
+                vfscore::SeekFrom::Start(index) =>f.lock().seek(SeekFrom::Start(index as u64)).unwrap() as _,
+                vfscore::SeekFrom::Current(index) => f.lock().seek(SeekFrom::Current(index as i64)).unwrap() as _,
+                vfscore::SeekFrom::End(index) => f.lock().seek(SeekFrom::End(index as i64)).unwrap() as _,
+            }
+        } else {
+            0
+        }
+    }
 }
 
 impl<T: DiskOperation> Inode<T> {
-    fn new_file(file: File<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>) -> Self {
-        Self::File(Arc::new(Mutex::new(file)))
+    fn new_file(file: File<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>) -> Box<dyn VfsFile> {
+        Box::new(Self::File(Arc::new(Mutex::new(file))))
     }
 
-    fn new_dir(dir: Dir<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>) -> Self {
-        Self::Dir(Arc::new(Mutex::new(dir)))
+    fn new_dir(dir: Dir<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>) -> Box<dyn VfsFile> {
+        Box::new(Self::Dir(Arc::new(Mutex::new(dir))))
     }
 }
 
