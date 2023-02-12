@@ -9,3 +9,4 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [dependencies]
 axruntime = { path = "../../modules/axruntime", features = ['fs']}
 axfs = { path = "../../modules/axfs" }
+vfscore = { path = "../../crates/vfscore" }

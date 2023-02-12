@@ -14,7 +14,8 @@ fn main() {
     println!("Hello, world!");
     if let Some(fs) = filesystems().first() {
         if let Some(file) = fs.root().create("hellofs.txt") {
-            file.write(b"Hello fs");
+            file.seek(vfscore::SeekFrom::End(0));
+            file.write(b" Hello fs\n");
         }
 
         println!("{:=^30}", " file list ");
