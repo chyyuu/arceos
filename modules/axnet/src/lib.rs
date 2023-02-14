@@ -6,6 +6,8 @@ extern crate log;
 use driver_net::NetDriverOps;
 
 pub fn init_network() {
+    info!("Number of NICs: {}", axdriver::net_devices().len());
+
     let net_dev = &axdriver::net_devices().0;
     let mut buf = [0u8; 0x100];
 

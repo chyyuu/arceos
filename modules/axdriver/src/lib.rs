@@ -3,21 +3,26 @@
 #[cfg(feature = "virtio")]
 mod virtio;
 
+use driver_block::BlockDriverOps;
+use driver_net::NetDriverOps;
 use lazy_init::LazyInit;
+use tuple_for_each::tuple_for_each;
 
 static DEVICES: LazyInit<AllDevices> = LazyInit::new();
 
+#[tuple_for_each(BlockDriverOps)]
 pub struct BlockDevices(
     #[cfg(feature = "virtio-blk")] pub self::virtio::VirtIoBlockDev,
     // #[cfg(feature = "nvme")] pub nvme::NVMeDev,
 );
 
+#[tuple_for_each(NetDriverOps)]
 pub struct NetDevices(
     #[cfg(feature = "virtio-net")] pub self::virtio::VirtIoNetDev,
     // #[cfg(feature = "e1000")] pub e1000::E1000Dev,
 );
 
-pub struct AllDevices {
+struct AllDevices {
     block: BlockDevices,
     net: NetDevices,
 }
