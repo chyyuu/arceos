@@ -18,14 +18,14 @@ members = [
     "crates/memory_addr",
     "crates/page_table",
     "crates/scheduler",
-    "crates/vfscore",
-    "crates/fatfs-shim",
+    "crates/tuple_for_each",
 
     "modules/axalloc",
     "modules/axconfig",
     "modules/axdriver",
     "modules/axerror",
     "modules/axhal",
+    "modules/axnet",
     "modules/axruntime",
     "modules/axtask",
     "modules/axfs"

@@ -10,4 +10,6 @@ lazy_init = { path = "../../crates/lazy_init" }
 vfscore = { path = "../../crates/vfscore" }
 fatfs-shim = { path = "../../crates/fatfs-shim" }
 axlog = { path = "../axlog" }
-axdriver = { path = "../axdriver", features = ["block"]}
+axdriver = { path = "../axdriver", features = ["virtio-blk"]}
+driver_block = { path = "../../crates/driver_block" }
+# driver_virtio = { path ="../../crates/driver_virtio" }

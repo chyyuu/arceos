@@ -10,6 +10,7 @@ use axdriver::block_devices;
 use fatfs_shim::Fat32FileSystem;
 use lazy_init::LazyInit;
 use vfscore::{VfsFileSystem, DiskOperation};
+use driver_block::BlockDriverOps;
 
 pub struct FileSystemList(Vec<Box<dyn VfsFileSystem>>);
 
@@ -45,11 +46,11 @@ pub struct DiskOps;
 
 impl DiskOperation for DiskOps {
     fn read_block(index: usize, buf: &mut [u8]) {
-        block_devices().first().unwrap().read_block(index, buf).expect("can't read block");
+        block_devices().0.read_block(index, buf).expect("can't read block");
     }
 
     fn write_block(index: usize, data: &[u8]) {
-        block_devices().first().unwrap().write_block(index, data).expect("can't write block");
+        block_devices().0.write_block(index, data).expect("can't write block");
     }
 }
 
