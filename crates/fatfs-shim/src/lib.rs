@@ -108,6 +108,7 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
         }
     }
 
+    #[inline]
     fn close(&self) {
         // close file
     }
@@ -141,6 +142,22 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
             }
         } else {
             0
+        }
+    }
+
+    #[inline]
+    fn is_dir(&self) -> bool {
+        match self {
+            Inode::File(_) => false,
+            Inode::Dir(_) => true,
+        }
+    }
+
+    #[inline]
+    fn is_file(&self) -> bool {
+        match self {
+            Inode::File(_) => true,
+            Inode::Dir(_) => false,
         }
     }
 }

@@ -21,6 +21,8 @@ pub trait VfsFile {
     fn read(&self, buf: &mut [u8]) -> usize;
     fn write(&self, data: &[u8]) -> usize;
     fn seek(&self, seek: SeekFrom) -> usize;
+    fn is_dir(&self) -> bool;
+    fn is_file(&self) -> bool;
     fn close(&self);
 }
 

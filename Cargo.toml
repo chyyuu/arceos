@@ -28,5 +28,6 @@ members = [
     "modules/axnet",
     "modules/axruntime",
     "modules/axtask",
-    "modules/axfs"
+    "modules/axfs",
+    "modules/axdevfs"
 ]
