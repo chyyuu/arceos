@@ -9,4 +9,4 @@ impl FileType {
     pub fn is_dir(&self) -> bool {
         todo!("is_dir")
     }
-} 
+}

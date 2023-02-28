@@ -3,13 +3,13 @@
 extern crate alloc;
 
 use alloc::boxed::Box;
-use alloc::vec::Vec;
 use alloc::string::String;
+use alloc::vec::Vec;
 
 pub enum SeekFrom {
     Start(usize),
     Current(isize),
-    End(isize)
+    End(isize),
 }
 
 // 文件读写操作

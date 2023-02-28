@@ -8,14 +8,14 @@ extern crate alloc;
 #[macro_use]
 extern crate axlog;
 
-use alloc::{vec::Vec, sync::Arc};
+use alloc::{sync::Arc, vec::Vec};
 use axdriver::block_devices;
+use driver_block::BlockDriverOps;
 use fatfs_shim::Fat32FileSystem;
 use lazy_init::LazyInit;
-use vfscore::{VfsFileSystem, DiskOperation};
-use driver_block::BlockDriverOps;
+use vfscore::{DiskOperation, VfsFileSystem};
 
-use crate::mount::{MOUNTEDFS, MountedFsList};
+use crate::mount::{MountedFsList, MOUNTEDFS};
 pub use ops::*;
 
 static FILESTSTEMS: LazyInit<FileSystemList> = LazyInit::new();
@@ -60,11 +60,17 @@ pub struct DiskOps;
 
 impl DiskOperation for DiskOps {
     fn read_block(index: usize, buf: &mut [u8]) {
-        block_devices().0.read_block(index, buf).expect("can't read block");
+        block_devices()
+            .0
+            .read_block(index, buf)
+            .expect("can't read block");
     }
 
     fn write_block(index: usize, data: &[u8]) {
-        block_devices().0.write_block(index, data).expect("can't write block");
+        block_devices()
+            .0
+            .write_block(index, data)
+            .expect("can't write block");
     }
 }
 

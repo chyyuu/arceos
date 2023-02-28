@@ -4,7 +4,7 @@ use vfscore::VfsFile;
 use crate::mount::MOUNTEDFS;
 
 /// open file with given path
-pub fn open(path: &str) -> Option<Box<dyn VfsFile>>{
+pub fn open(path: &str) -> Option<Box<dyn VfsFile>> {
     let fs = MOUNTEDFS.get_matched_fs(path)?;
     let path = &path[fs.path().len()..];
 
@@ -13,11 +13,10 @@ pub fn open(path: &str) -> Option<Box<dyn VfsFile>>{
     } else {
         Some(fs.fs().root())
     }
-    
 }
 
 /// create a new file by given path
-pub fn create(path: &str) -> Option<Box<dyn VfsFile>>{
+pub fn create(path: &str) -> Option<Box<dyn VfsFile>> {
     let fs = MOUNTEDFS.get_matched_fs(path)?;
     let path = &path[fs.path().len()..];
     if path.len() > 0 {

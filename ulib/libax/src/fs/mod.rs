@@ -1,10 +1,10 @@
 pub mod error;
-mod path;
 pub mod filetype;
+mod path;
 
 pub use self::error::{Error, Result};
-pub use path::Path;
 pub use alloc::{string::String, vec::Vec};
+pub use path::Path;
 
 use axfs::open;
 
@@ -16,18 +16,16 @@ pub fn read(path: Path) -> Result<Vec<u8>> {
             let mut buffer = vec![0u8; file_size];
             file.read(&mut buffer);
             Ok(buffer)
-        },
-        None => Err(axerror::AxError::NotFound)
+        }
+        None => Err(axerror::AxError::NotFound),
     }
 }
 
 // TODO: result to Result<ReadDirIterator>.
 pub fn read_dir(path: Path) -> Result<Vec<String>> {
     match open(path.as_path()) {
-        Some(file) => {
-            Ok(file.read_dir())
-        },
-        None => todo!()
+        Some(file) => Ok(file.read_dir()),
+        None => todo!(),
     }
 }
 
@@ -40,13 +38,11 @@ pub fn write(path: Path, data: &[u8]) -> Result<()> {
         Some(file) => {
             file.write(data);
             Ok(())
-        },
-        None => {
-            axfs::create(path.as_path()).map_or(Err(axerror::AxError::Unsupported), |f| {
-                f.write(data);
-                Ok(())
-            })
         }
+        None => axfs::create(path.as_path()).map_or(Err(axerror::AxError::Unsupported), |f| {
+            f.write(data);
+            Ok(())
+        }),
     }
 }
 
@@ -67,5 +63,5 @@ pub fn remove_dir_all(path: Path) -> Result<()> {
 }
 
 pub fn create_dir(path: Path) -> Result<()> {
-    axfs::mkdir(path.as_path()).map_or(Err(axerror::AxError::NotFound), |_|Ok(()))
+    axfs::mkdir(path.as_path()).map_or(Err(axerror::AxError::NotFound), |_| Ok(()))
 }

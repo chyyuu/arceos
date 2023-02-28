@@ -5,16 +5,21 @@ extern crate alloc;
 #[macro_use]
 extern crate log;
 
-use core::marker::PhantomData;
-use alloc::{boxed::Box, sync::Arc};
-use alloc::vec::Vec;
+use alloc::boxed::Box;
 use alloc::string::String;
+use alloc::sync::Arc;
+use alloc::vec::Vec;
+use core::marker::PhantomData;
 
-use fatfs::{NullTimeProvider, LossyOemCpConverter, File, Dir, Read, Seek, Write, FileSystem, SeekFrom};
+use fatfs::{
+    Dir, File, FileSystem, LossyOemCpConverter, NullTimeProvider, Read, Seek, SeekFrom, Write,
+};
 use spin::Mutex;
-use vfscore::{DiskOperation, VfsFileSystem, VfsFile};
+use vfscore::{DiskOperation, VfsFile, VfsFileSystem};
 
-pub struct Fat32FileSystem<T: DiskOperation>(fatfs::FileSystem<DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>);
+pub struct Fat32FileSystem<T: DiskOperation>(
+    fatfs::FileSystem<DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>,
+);
 
 unsafe impl<T: DiskOperation> Send for Fat32FileSystem<T> {}
 
@@ -35,17 +40,17 @@ impl<T: DiskOperation> Fat32FileSystem<T> {
         let cursor: DiskCursor<T> = DiskCursor {
             sector: 0,
             offset: 0,
-            block_device: PhantomData
+            block_device: PhantomData,
         };
         Self(FileSystem::new(cursor, fatfs::FsOptions::new()).expect("open fs wrong"))
     }
 }
 
 pub enum Inode<T: DiskOperation + 'static> {
-    /// File 
+    /// File
     File(Arc<Mutex<File<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>>>),
     /// Dir
-    Dir(Arc<Mutex<Dir<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>>>)
+    Dir(Arc<Mutex<Dir<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>>>),
 }
 
 impl<T: DiskOperation> VfsFile for Inode<T> {
@@ -61,7 +66,7 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
                 } else {
                     None
                 }
-            },
+            }
         }
     }
 
@@ -77,7 +82,7 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
                 }
 
                 result
-            },
+            }
         }
     }
 
@@ -86,13 +91,12 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
             Inode::File(file) => {
                 let mut file = file.lock();
                 let file_size = file.seek(fatfs::SeekFrom::End(0)).unwrap();
-                file.seek(fatfs::SeekFrom::Start(0)).expect("can't seek file");
-                // 注释掉
-                // file.read_exact(buf).expect("can't read file");
+                file.seek(fatfs::SeekFrom::Start(0))
+                    .expect("can't seek file");
                 file.read_exact(buf).expect("can't read file exactly");
                 file_size as usize
-            },
-            Inode::Dir(_) => 0, 
+            }
+            Inode::Dir(_) => 0,
         }
     }
 
@@ -102,8 +106,8 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
                 let mut file = file.lock();
                 file.write_all(data).expect("can't write file");
                 data.len()
-            },
-            Inode::Dir(_) => 0, 
+            }
+            Inode::Dir(_) => 0,
         }
     }
 
@@ -118,7 +122,7 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
             Inode::Dir(dir) => {
                 let file = dir.lock().create_dir(folder_name).map(Inode::new_dir);
                 file.map(Some).unwrap_or(None)
-            },
+            }
         }
     }
 
@@ -128,16 +132,22 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
             Inode::Dir(dir) => {
                 let file = dir.lock().create_file(file_name).map(Inode::new_file);
                 file.map(Some).unwrap_or(None)
-            },
+            }
         }
     }
 
     fn seek(&self, seek: vfscore::SeekFrom) -> usize {
         if let Inode::File(f) = self {
             match seek {
-                vfscore::SeekFrom::Start(index) =>f.lock().seek(SeekFrom::Start(index as u64)).unwrap() as _,
-                vfscore::SeekFrom::Current(index) => f.lock().seek(SeekFrom::Current(index as i64)).unwrap() as _,
-                vfscore::SeekFrom::End(index) => f.lock().seek(SeekFrom::End(index as i64)).unwrap() as _,
+                vfscore::SeekFrom::Start(index) => {
+                    f.lock().seek(SeekFrom::Start(index as u64)).unwrap() as _
+                }
+                vfscore::SeekFrom::Current(index) => {
+                    f.lock().seek(SeekFrom::Current(index as i64)).unwrap() as _
+                }
+                vfscore::SeekFrom::End(index) => {
+                    f.lock().seek(SeekFrom::End(index as i64)).unwrap() as _
+                }
             }
         } else {
             0
@@ -174,7 +184,8 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
             let mut file = file.lock();
             let current = file.seek(SeekFrom::Current(0)).expect("can't seek file");
             let file_size = file.seek(SeekFrom::End(0)).expect("can't seek file");
-            file.seek(SeekFrom::Start(current)).expect("can't seek file");
+            file.seek(SeekFrom::Start(current))
+                .expect("can't seek file");
             file_size as usize
         } else {
             0
@@ -183,11 +194,15 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
 }
 
 impl<T: DiskOperation> Inode<T> {
-    fn new_file(file: File<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>) -> Box<dyn VfsFile> {
+    fn new_file(
+        file: File<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>,
+    ) -> Box<dyn VfsFile> {
         Box::new(Self::File(Arc::new(Mutex::new(file))))
     }
 
-    fn new_dir(dir: Dir<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>) -> Box<dyn VfsFile> {
+    fn new_dir(
+        dir: Dir<'static, DiskCursor<T>, NullTimeProvider, LossyOemCpConverter>,
+    ) -> Box<dyn VfsFile> {
         Box::new(Self::Dir(Arc::new(Mutex::new(dir))))
     }
 }
@@ -215,16 +230,12 @@ impl fatfs::IoError for DiskCursorIoError {
 pub struct DiskCursor<T: DiskOperation> {
     sector: u64,
     offset: usize,
-    block_device: PhantomData<T>
+    block_device: PhantomData<T>,
 }
 
-unsafe impl<T: DiskOperation> Sync for DiskCursor<T> {
-    
-}
+unsafe impl<T: DiskOperation> Sync for DiskCursor<T> {}
 
-unsafe impl<T: DiskOperation> Send for DiskCursor<T> {
-    
-}
+unsafe impl<T: DiskOperation> Send for DiskCursor<T> {}
 
 impl<T: DiskOperation> DiskCursor<T> {
     fn get_position(&self) -> usize {
@@ -260,9 +271,9 @@ impl<T: DiskOperation> fatfs::Read for DiskCursor<T> {
 
             let start = self.offset;
             let end = (self.offset + buf.len()).min(512);
-            
+
             buf.copy_from_slice(&data[start..end]);
-            end-start
+            end - start
         } else {
             T::read_block(self.sector as usize, &mut buf[0..512]);
             512
@@ -287,11 +298,11 @@ impl<T: DiskOperation> fatfs::Write for DiskCursor<T> {
 
             let start = self.offset;
             let end = (self.offset + buf.len()).min(512);
-            
+
             data[start..end].clone_from_slice(&buf);
             T::write_block(self.sector as usize, &mut data);
 
-            end-start
+            end - start
         } else {
             T::write_block(self.sector as usize, &buf[0..512]);
             512
