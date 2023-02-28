@@ -86,6 +86,10 @@ pub extern "C" fn rust_main() -> ! {
     {
         info!("Initialize device drivers...");
         axdriver::init_drivers();
+    }
+
+    #[cfg(any(feature = "fs"))]
+    {
         axfs::init_filesystems();
     }
 
