@@ -9,19 +9,10 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [features]
 alloc = ["dep:axalloc"]
 paging = ["alloc", "axhal/paging"]
-multitask = ["alloc", "dep:axtask"]
+multitask = ["alloc", "axtask/multitask"]
 
 fs = ["alloc", "paging", "axdriver/virtio-blk", "dep:axfs"] # TODO: remove "paging"
 net = ["alloc", "paging", "axdriver/virtio-net", "dep:axnet"]
-
-log-level-off = ["axlog/log-level-off"]
-log-level-error = ["axlog/log-level-error"]
-log-level-warn = ["axlog/log-level-warn"]
-log-level-info = ["axlog/log-level-info"]
-log-level-debug = ["axlog/log-level-debug"]
-log-level-trace = ["axlog/log-level-trace"]
-
-platform-qemu-virt-riscv = ["axhal/platform-qemu-virt-riscv", "axdriver?/bus-mmio"]
 
 default = []
 
@@ -33,4 +24,4 @@ axfs = { path = "../axfs", optional = true }
 axhal = { path = "../axhal" }
 axlog = { path = "../axlog" }
 axnet = { path = "../axnet", optional = true }
-axtask = { path = "../axtask", optional = true }
+axtask = { path = "../axtask", default-features = false, optional = true }

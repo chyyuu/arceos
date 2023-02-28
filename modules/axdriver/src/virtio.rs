@@ -2,12 +2,13 @@ use core::ptr::NonNull;
 
 use axalloc::global_allocator;
 use axhal::mem::{phys_to_virt, virt_to_phys};
+use cfg_if::cfg_if;
 use driver_common::{BaseDriverOps, DeviceType};
 use driver_virtio::{BufferDirection, PhysAddr, VirtIoHal};
 
 use crate::AllDevices;
 
-cfg_if::cfg_if! {
+cfg_if! {
     if #[cfg(feature =  "bus-mmio")] {
         type VirtIoTransport = driver_virtio::MmioTransport;
     } else if #[cfg(feature = "bus-pci")] {
@@ -15,21 +16,19 @@ cfg_if::cfg_if! {
     }
 }
 
-#[cfg(feature = "virtio-blk")]
-pub type VirtIoBlockDev = driver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
-#[cfg(feature = "virtio-net")]
-pub type VirtIoNetDev = driver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport>;
+cfg_if! {
+    if #[cfg(feature = "virtio-blk")] {
+        pub type VirtIoBlockDev = driver_virtio::VirtIoBlkDev<VirtIoHalImpl, VirtIoTransport>;
+    }
+}
 
-const VIRTIO_MMIO_REGIONS: &[(usize, usize)] = &[
-    (0x1000_1000, 0x1000),
-    (0x1000_2000, 0x1000),
-    (0x1000_3000, 0x1000),
-    (0x1000_4000, 0x1000),
-    (0x1000_5000, 0x1000),
-    (0x1000_6000, 0x1000),
-    (0x1000_7000, 0x1000),
-    (0x1000_8000, 0x1000),
-];
+cfg_if! {
+    if #[cfg(feature = "virtio-net")] {
+        const NET_QUEUE_SIZE: usize = 64;
+        const NET_BUFFER_SIZE: usize = 2048;
+        pub type VirtIoNetDev = driver_virtio::VirtIoNetDev<VirtIoHalImpl, VirtIoTransport, NET_QUEUE_SIZE>;
+    }
+}
 
 pub struct VirtIoHalImpl;
 
@@ -73,7 +72,7 @@ impl AllDevices {
         F: FnOnce(VirtIoTransport) -> Option<D>,
     {
         // TODO: parse device tree
-        for reg in VIRTIO_MMIO_REGIONS {
+        for reg in axconfig::VIRTIO_MMIO_REGIONS {
             if let Some(transport) = driver_virtio::probe_mmio_device(
                 phys_to_virt(reg.0.into()).as_mut_ptr(),
                 reg.1,
@@ -98,6 +97,8 @@ impl AllDevices {
 
     #[cfg(feature = "virtio-net")]
     pub(crate) fn probe_virtio_net() -> Option<VirtIoNetDev> {
-        Self::probe_devices_common(DeviceType::Net, |t| VirtIoNetDev::try_new(t).ok())
+        Self::probe_devices_common(DeviceType::Net, |t| {
+            VirtIoNetDev::try_new(t, NET_BUFFER_SIZE).ok()
+        })
     }
 }

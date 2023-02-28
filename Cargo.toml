@@ -1,15 +1,20 @@
 [workspace]
 
 members = [
-    "apps/echoserver",
     "apps/exception",
     "apps/helloworld",
     "apps/memtest",
     "apps/multitask",
+<<<<<<< HEAD
     "apps/hellofs",
+=======
+    "apps/net/echoserver",
+    "apps/net/httpclient",
+>>>>>>> equation314/main
 
     "crates/allocator",
     "crates/crate_interface",
+    "crates/driver_block",
     "crates/driver_common",
     "crates/driver_net",
     "crates/driver_virtio",
@@ -17,6 +22,8 @@ members = [
     "crates/linked_list",
     "crates/memory_addr",
     "crates/page_table",
+    "crates/page_table_entry",
+    "crates/ratio",
     "crates/scheduler",
     "crates/tuple_for_each",
 
@@ -25,9 +32,16 @@ members = [
     "modules/axdriver",
     "modules/axerror",
     "modules/axhal",
+    "modules/axlog",
     "modules/axnet",
     "modules/axruntime",
     "modules/axtask",
+<<<<<<< HEAD
     "modules/axfs",
     "modules/axdevfs"
+=======
+
+    "ulib/libax",
+    "ulib/c_libax/libax_bindings",
+>>>>>>> equation314/main
 ]

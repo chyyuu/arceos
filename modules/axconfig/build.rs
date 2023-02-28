@@ -6,6 +6,8 @@ fn main() {
     let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
     let platform = if cfg!(feature = "platform-qemu-virt-riscv") {
         "qemu-virt-riscv"
+    } else if cfg!(feature = "platform-qemu-virt-aarch64") {
+        "qemu-virt-aarch64"
     } else {
         println!("Unsupported platform, use dummy config!");
         "dummy"
@@ -58,22 +60,23 @@ fn gen_config_rs(arch: &str, platform: &str) -> Result<()> {
             } else {
                 writeln!(output, "pub const {var_name}: &str = \"{s}\";")?;
             }
+        } else if let Value::Array(regions) = value {
+            if key != "mmio-regions" && key != "virtio-mmio-regions" {
+                continue;
+            }
+            writeln!(output, "pub const {var_name}: &[(usize, usize)] = &[")?;
+            for r in regions {
+                let r = r.as_array().unwrap();
+                writeln!(
+                    output,
+                    "    ({}, {}),",
+                    r[0].as_str().unwrap(),
+                    r[1].as_str().unwrap()
+                )?;
+            }
+            writeln!(output, "];")?;
         }
     }
-
-    writeln!(output, "pub const MMIO_REGIONS: &[(usize, usize)] = &[")?;
-    if let Some(regions) = config["mmio-regions"].as_array() {
-        for r in regions {
-            let r = r.as_array().unwrap();
-            writeln!(
-                output,
-                "    ({}, {}),",
-                r[0].as_str().unwrap(),
-                r[1].as_str().unwrap()
-            )?;
-        }
-    }
-    writeln!(output, "];")?;
 
     let out_path = format!("src/config_{}.rs", platform.replace('-', "_"));
     fs::write(out_path, output)?;

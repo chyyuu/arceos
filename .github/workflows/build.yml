@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [riscv64]
+        arch: [riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        arch: [riscv64]
+        arch: [riscv64, aarch64]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -41,6 +41,32 @@ jobs:
         crate: cargo-binutils
         version: latest
         use-tool-cache: true
-    - name: Build kernel
+    - name: Build helloworld
+      run: make ARCH=${{ matrix.arch }} APP=helloworld
+    - name: Build memtest
+      run: make ARCH=${{ matrix.arch }} APP=memtest
+    - name: Build exception
+      run: make ARCH=${{ matrix.arch }} APP=exception
+    - name: Build multitask
+      run: make ARCH=${{ matrix.arch }} APP=multitask
+    - name: Build net/echoserver
+      run: make ARCH=${{ matrix.arch }} APP=echoserver
+    - name: Build net/httpclient
+      run: make ARCH=${{ matrix.arch }} APP=httpclient
+
+    - name: Install musl toolchain
       run: |
-        make ARCH=${{ matrix.arch }}
+        if [ "${{ matrix.arch }}" = "x86_64" ]; then
+          export MUSL_PATH="x86_64-linux-musl-cross"
+        elif [ "${{ matrix.arch }}" = "aarch64" ]; then
+          export MUSL_PATH="aarch64-linux-musl-cross"
+        elif [ "${{ matrix.arch }}" = "riscv64" ]; then
+          export MUSL_PATH="riscv64-linux-musl-cross"
+        fi
+        wget https://musl.cc/$MUSL_PATH.tgz
+        tar -xf $MUSL_PATH.tgz
+        mv $MUSL_PATH musl
+    - name: Build c/helloworld
+      run: |
+        export PATH=$PATH:$PWD/musl/bin
+        make ARCH=${{ matrix.arch }} APP=helloworld APP_LANG=c

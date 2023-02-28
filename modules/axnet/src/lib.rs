@@ -2,11 +2,21 @@
 
 #[macro_use]
 extern crate log;
+extern crate alloc;
 
-use driver_common::{BaseDriverOps, DeviceType};
-use driver_net::NetDriverOps;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "smoltcp")] {
+        mod smoltcp_impl;
+        use smoltcp_impl as net_impl;
+    }
+}
+
+pub use self::net_impl::TcpSocket;
+pub use smoltcp::wire::{IpAddress as IpAddr, IpEndpoint as SocketAddr, Ipv4Address as Ipv4Addr};
 
 pub fn init_network() {
+    use driver_common::{BaseDriverOps, DeviceType};
+
     let devices = axdriver::net_devices();
     info!("number of NICs: {}", devices.len());
     axdriver::net_devices_enumerate!((i, dev) in devices {
@@ -14,12 +24,5 @@ pub fn init_network() {
         info!("  NIC {}: {:?}", i, dev.device_name());
     });
 
-    let net_dev = &devices.0;
-    let mut buf = [0u8; 0x100];
-
-    info!("Waiting to receive data...");
-    let len = net_dev.recv(&mut buf).expect("failed to recv");
-    info!("received {} bytes: {:02X?}", len, &buf[..len]);
-    net_dev.send(&buf[..len]).expect("failed to send");
-    info!("virtio-net test finished.");
+    net_impl::init();
 }

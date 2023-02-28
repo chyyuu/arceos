@@ -1,6 +1,8 @@
 #![cfg_attr(not(test), no_std)]
-#![feature(ptr_internals)]
 #![feature(const_trait_impl)]
+
+cfg_if::cfg_if! {
+if #[cfg(feature = "multitask")] {
 
 #[macro_use]
 extern crate log;
@@ -49,6 +51,11 @@ pub fn init_scheduler() {
     let rq = AxRunQueue::new();
     unsafe { CURRENT_TASK.init_by(rq.init_task().clone()) };
     RUN_QUEUE.init_by(spin::Mutex::new(rq));
+    if cfg!(feature = "sched_fifo") {
+        info!("  use FIFO scheduler.");
+    } else if cfg!(feature = "sched_rr") {
+        info!("  use Round-robin scheduler.");
+    }
 }
 
 pub fn spawn<F>(f: F)
@@ -66,3 +73,10 @@ pub fn yield_now() {
 pub fn exit(exit_code: i32) -> ! {
     RUN_QUEUE.lock().exit_current(exit_code)
 }
+
+} else { // if #[cfg(feature = "multitask")]
+
+pub fn yield_now() {}
+
+} // else
+} // cfg_if::cfg_if!
