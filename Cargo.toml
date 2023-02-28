@@ -8,6 +8,7 @@ members = [
     "apps/hellofs",
     "apps/net/echoserver",
     "apps/net/httpclient",
+    "apps/net/httpserver",
 
     "crates/allocator",
     "crates/crate_interface",
