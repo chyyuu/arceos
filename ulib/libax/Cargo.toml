@@ -20,7 +20,7 @@ sched_rr = ["axtask/sched_rr"]
 net = ["axruntime/net", "dep:axnet"]
 
 # File system
-fs = ["axruntime/fs"]
+fs = ["axruntime/fs", "dep:axfs"]
 
 # Logging
 log-level-off = ["axlog/log-level-off"]
@@ -42,5 +42,6 @@ axerror = { path = "../../modules/axerror" }
 axhal = { path = "../../modules/axhal" }
 axlog = { path = "../../modules/axlog" }
 axnet = { path = "../../modules/axnet", optional = true }
+axfs  = { path = "../../modules/axfs", optional = true }
 axruntime = { path = "../../modules/axruntime" }
 axtask = { path = "../../modules/axtask", default-features = false, optional = true }

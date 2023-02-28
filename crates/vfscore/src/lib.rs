@@ -24,11 +24,13 @@ pub trait VfsFile {
     fn is_dir(&self) -> bool;
     fn is_file(&self) -> bool;
     fn close(&self);
+    fn remove(&self, file_name: &str);
+    fn size(&self) -> usize;
 }
 
 // 尽量给予比较长的生命周期
 pub trait VfsFileSystem: Send + Sync {
-    fn name(&'static self) -> &'static str;
+    fn name(&self) -> &str;
     fn root(&'static self) -> Box<dyn VfsFile>;
 }
 

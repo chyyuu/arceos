@@ -1,25 +1,33 @@
 #![no_std]
 
+pub mod mount;
+mod ops;
+
 #[macro_use]
 extern crate alloc;
 #[macro_use]
 extern crate axlog;
 
-use alloc::{vec::Vec, boxed::Box};
+use alloc::{vec::Vec, sync::Arc};
 use axdriver::block_devices;
 use fatfs_shim::Fat32FileSystem;
 use lazy_init::LazyInit;
 use vfscore::{VfsFileSystem, DiskOperation};
 use driver_block::BlockDriverOps;
 
-pub struct FileSystemList(Vec<Box<dyn VfsFileSystem>>);
+use crate::mount::{MOUNTEDFS, MountedFsList};
+pub use ops::*;
+
+static FILESTSTEMS: LazyInit<FileSystemList> = LazyInit::new();
+
+pub struct FileSystemList(Vec<Arc<dyn VfsFileSystem>>);
 
 impl FileSystemList {
     pub(crate) const fn new() -> Self {
         Self(vec![])
     }
 
-    pub(crate) fn add(&mut self, fs: Box<dyn VfsFileSystem>) {
+    pub(crate) fn add(&mut self, fs: Arc<dyn VfsFileSystem>) {
         // info!(
         //     "Added new {} filesystem",
         //     fs.as_ref().name()
@@ -27,19 +35,25 @@ impl FileSystemList {
         self.0.push(fs);
     }
 
-    pub fn first(&self) -> Option<&Box<dyn VfsFileSystem>> {
+    pub fn first(&self) -> Option<&Arc<dyn VfsFileSystem>> {
         self.0.first()
     }
 }
 
-static FILESTSTEMS: LazyInit<FileSystemList> = LazyInit::new();
-
 pub fn init_filesystems() {
     info!("init filesystems");
-    let mut fs_list = FileSystemList::new();
+    // init filesystems
+    let fat32 = Arc::new(Fat32FileSystem::<DiskOps>::new());
 
-    fs_list.add(Box::new(Fat32FileSystem::<DiskOps>::new()));
+    // init filesystem list
+    let mut fs_list = FileSystemList::new();
+    fs_list.add(fat32.clone());
     FILESTSTEMS.init_by(fs_list);
+
+    // init mounted filesystem list
+    let mut mounted_list = MountedFsList::new();
+    mounted_list.mount("/", fat32.clone());
+    MOUNTEDFS.init_by(mounted_list)
 }
 
 pub struct DiskOps;

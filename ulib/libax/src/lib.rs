@@ -3,6 +3,7 @@
 pub use axlog::{debug, error, info, print, println, trace, warn};
 
 #[cfg(feature = "alloc")]
+#[macro_use]
 extern crate alloc;
 
 #[macro_use]
@@ -18,3 +19,6 @@ pub mod task;
 
 #[cfg(feature = "net")]
 pub mod net;
+
+#[cfg(feature = "fs")]
+pub mod fs;

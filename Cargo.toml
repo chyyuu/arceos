@@ -5,12 +5,9 @@ members = [
     "apps/helloworld",
     "apps/memtest",
     "apps/multitask",
-<<<<<<< HEAD
     "apps/hellofs",
-=======
     "apps/net/echoserver",
     "apps/net/httpclient",
->>>>>>> equation314/main
 
     "crates/allocator",
     "crates/crate_interface",
@@ -36,12 +33,9 @@ members = [
     "modules/axnet",
     "modules/axruntime",
     "modules/axtask",
-<<<<<<< HEAD
     "modules/axfs",
-    "modules/axdevfs"
-=======
-
+    "modules/axdevfs",
+    
     "ulib/libax",
     "ulib/c_libax/libax_bindings",
->>>>>>> equation314/main
 ]

@@ -10,7 +10,7 @@ use alloc::{boxed::Box, sync::Arc};
 use alloc::vec::Vec;
 use alloc::string::String;
 
-use fatfs::{NullTimeProvider, LossyOemCpConverter, File, Dir, Read, Seek, Write, FileSystem, SeekFrom, info};
+use fatfs::{NullTimeProvider, LossyOemCpConverter, File, Dir, Read, Seek, Write, FileSystem, SeekFrom};
 use spin::Mutex;
 use vfscore::{DiskOperation, VfsFileSystem, VfsFile};
 
@@ -25,7 +25,7 @@ impl<T: DiskOperation + 'static> VfsFileSystem for Fat32FileSystem<T> {
         Inode::new_dir(self.0.root_dir())
     }
 
-    fn name(&'static self) -> &'static str {
+    fn name(&self) -> &str {
         "fat32"
     }
 }
@@ -53,7 +53,6 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
         match self {
             Inode::File(_) => None,
             Inode::Dir(dir) => {
-                info!("t1");
                 let dir = dir.lock();
                 if let Ok(f) = dir.open_file(path) {
                     Some(Inode::new_file(f))
@@ -90,7 +89,7 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
                 file.seek(fatfs::SeekFrom::Start(0)).expect("can't seek file");
                 // 注释掉
                 // file.read_exact(buf).expect("can't read file");
-                file.read_exact(buf);
+                file.read_exact(buf).expect("can't read file exactly");
                 file_size as usize
             },
             Inode::Dir(_) => 0, 
@@ -158,6 +157,27 @@ impl<T: DiskOperation> VfsFile for Inode<T> {
         match self {
             Inode::File(_) => true,
             Inode::Dir(_) => false,
+        }
+    }
+
+    #[inline]
+    fn remove(&self, filename: &str) {
+        if let Inode::Dir(dir) = self {
+            dir.lock().remove(filename);
+        }
+    }
+
+    #[inline]
+    fn size(&self) -> usize {
+        // self.seek(seek)
+        if let Inode::File(file) = self {
+            let mut file = file.lock();
+            let current = file.seek(SeekFrom::Current(0)).expect("can't seek file");
+            let file_size = file.seek(SeekFrom::End(0)).expect("can't seek file");
+            file.seek(SeekFrom::Start(current)).expect("can't seek file");
+            file_size as usize
+        } else {
+            0
         }
     }
 }
