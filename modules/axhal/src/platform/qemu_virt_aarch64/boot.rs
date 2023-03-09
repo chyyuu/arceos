@@ -5,8 +5,12 @@ use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::TASK_STACK_SIZE;
 
+use crate::console::putchar;
+
+use super::lcpu::{cpu_id, MAX_CORES};
+
 #[link_section = ".bss.stack"]
-static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
+static mut BOOT_STACK: [u8; TASK_STACK_SIZE * MAX_CORES] = [0; TASK_STACK_SIZE * MAX_CORES];
 
 #[link_section = ".data.boot_page_table"]
 static mut BOOT_PT_L0: [A64PTE; 512] = [A64PTE::empty(); 512];
@@ -115,6 +119,8 @@ unsafe extern "C" fn _start() -> ! {
     }
     // PC = 0x4008_0000
     core::arch::asm!("
+        // save address of device tree, may not be required
+        //mov     x26, x0
         adrp    x8, boot_stack_top
         mov     sp, x8
         bl      {switch_to_el1}
@@ -126,6 +132,7 @@ unsafe extern "C" fn _start() -> ! {
         mov     sp, x8
 
         // call functions at the high address
+        //mov     x0, x26
         ldr     x8, ={platform_init}
         blr     x8
         ldr     x8, ={rust_main}
@@ -138,4 +145,42 @@ unsafe extern "C" fn _start() -> ! {
         rust_main = sym rust_main,
         options(noreturn),
     )
+}
+
+#[naked]
+#[no_mangle]
+#[link_section = ".text.boot"]
+pub unsafe extern "C" fn _start_secondary() -> ! {
+    core::arch::asm!("
+        adrp    x8, boot_stack_top
+        mrs     x0, mpidr_el1
+        mov     x1, {TASK_STACK_SIZE}
+        mul     x0, x0, x1
+        sub     x8, x8, x0
+        mov     sp, x8
+        bl      {switch_to_el1}
+        bl      {init_mmu}
+
+        // set SP to the high address
+        ldr     x8, =boot_stack_top
+        mrs     x0, mpidr_el1
+        mov     x1, {TASK_STACK_SIZE}
+        mul     x0, x0, x1
+        sub     x8, x8, x0
+        mov     sp, x8
+        mov     sp, x8
+
+        ldr     x8, ={rust_main_secondary}
+        blr     x8
+        b      .",
+        switch_to_el1 = sym switch_to_el1,
+        TASK_STACK_SIZE = const TASK_STACK_SIZE,
+        init_mmu = sym init_mmu,
+        rust_main_secondary = sym rust_main_secondary,
+        options(noreturn),
+    )
+}
+fn rust_main_secondary() {
+    putchar((48^cpu_id()).try_into().unwrap());
+    unsafe{core::arch::asm!("wfi");}
 }

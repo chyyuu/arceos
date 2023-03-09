@@ -8,10 +8,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 
 [features]
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
-platform-qemu-virt-aarch64 = [
-    "axconfig/platform-qemu-virt-aarch64",
-    "dep:page_table_entry", "dep:lazy_init", "dep:ratio",
-]
+platform-qemu-virt-aarch64 = ["axconfig/platform-qemu-virt-aarch64", "dep:page_table_entry", "dep:lazy_init", "dep:ratio"]
 paging = ["axalloc", "page_table"]
 default = []
 
@@ -39,6 +36,7 @@ sbi-rt = { version = "0.0.2", features = ["legacy"] }
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 aarch64-cpu = "9.3"
 tock-registers = "0.8"
+fdt-rs = { version = "0.4.3", default-features = false }
 
 [build-dependencies]
 axconfig = { path = "../axconfig" }

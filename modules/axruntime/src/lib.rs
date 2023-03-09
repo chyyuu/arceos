@@ -2,6 +2,7 @@
 
 #[macro_use]
 extern crate axlog;
+extern crate axhal;
 
 #[cfg(not(test))]
 mod lang_items;
@@ -97,6 +98,15 @@ pub extern "C" fn rust_main() -> ! {
 
     #[cfg(feature = "multitask")]
     axtask::init_scheduler();
+
+    #[cfg(target_arch = "aarch64")]
+    {
+        let mut i = 1;
+        while i < 4 {
+            axhal::start(i);
+            i += 1;
+        }
+    }
 
     unsafe { main() };
 

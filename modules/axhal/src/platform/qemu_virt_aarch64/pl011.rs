@@ -7,6 +7,8 @@ use tock_registers::registers::{ReadOnly, ReadWrite, WriteOnly};
 use memory_addr::{PhysAddr, VirtAddr};
 use spin::Mutex;
 
+use crate::mem::phys_to_virt;
+
 const UART_BASE: PhysAddr = PhysAddr::from(0x0900_0000);
 #[allow(unused)]
 const UART_IRQ_NUM: usize = 33;
@@ -52,7 +54,8 @@ impl Pl011Uart {
         unsafe { &*(self.base_vaddr.as_ptr() as *const _) }
     }
 
-    fn init(&mut self) {
+    fn init(&mut self, addr: usize) {
+        self.base_vaddr = phys_to_virt(addr.into());
         // clear all irqs
         self.regs().icr.set(0x3ff);
 
@@ -88,6 +91,6 @@ pub fn console_getchar() -> Option<u8> {
     UART.lock().getchar()
 }
 
-pub fn init() {
-    UART.lock().init();
+pub fn init(addr: usize) {
+    UART.lock().init(addr);
 }

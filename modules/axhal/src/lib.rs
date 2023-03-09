@@ -24,3 +24,5 @@ pub mod console {
 pub mod misc {
     pub use super::platform::misc::*;
 }
+
+pub use platform::lcpu::start;
