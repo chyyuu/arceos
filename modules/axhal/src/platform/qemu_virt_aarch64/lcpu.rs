@@ -5,7 +5,7 @@ use aarch64_cpu::registers::MPIDR_EL1;
 use lazy_init::LazyInit;
 use spin::Mutex;
 use tock_registers::interfaces::Readable;
-const CPU_ID_MASK: u64 = 0xff00ffffff;
+pub const CPU_ID_MASK: u64 = 0xff00ffffff;
 pub const MAX_CORES: usize = 4;
 pub fn cpu_id() -> u64 {
     MPIDR_EL1.get() & CPU_ID_MASK
