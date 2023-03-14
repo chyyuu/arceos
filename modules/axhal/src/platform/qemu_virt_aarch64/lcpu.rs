@@ -59,8 +59,9 @@ impl LCPUManager {
         self.count += 1;
     }
     pub fn start(&mut self, idx: usize) {
-        assert!(idx < self.count);
-        self.lcpus[idx].start();
+        if idx < self.count {
+            self.lcpus[idx].start();
+        }
     }
 }
 static LCPUMANAGER: LazyInit<Mutex<LCPUManager>> = LazyInit::new();

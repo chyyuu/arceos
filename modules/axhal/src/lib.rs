@@ -25,4 +25,5 @@ pub mod misc {
     pub use super::platform::misc::*;
 }
 
+#[cfg(target_arch = "aarch64")]
 pub use platform::lcpu::start;

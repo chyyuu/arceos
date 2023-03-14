@@ -120,7 +120,7 @@ unsafe extern "C" fn _start() -> ! {
     // PC = 0x4008_0000
     core::arch::asm!("
         // save address of device tree, may not be required
-        //mov     x26, x0
+        mov     x26, x0
         adrp    x8, boot_stack_top
         mov     sp, x8
         bl      {switch_to_el1}
@@ -131,8 +131,9 @@ unsafe extern "C" fn _start() -> ! {
         ldr     x8, =boot_stack_top
         mov     sp, x8
 
+        // restore address of device tree, may not be required
+        mov     x0, x26
         // call functions at the high address
-        //mov     x0, x26
         ldr     x8, ={platform_init}
         blr     x8
         ldr     x8, ={rust_main}
