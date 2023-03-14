@@ -5,9 +5,9 @@ use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::TASK_STACK_SIZE;
 
-use crate::console::{putchar};
+use crate::console::putchar;
 
-use super::lcpu::{cpu_id, MAX_CORES, CPU_ID_MASK};
+use super::lcpu::{cpu_id, CPU_ID_MASK, MAX_CORES};
 
 #[link_section = ".bss.stack"]
 static mut BOOT_STACK: [u8; TASK_STACK_SIZE * MAX_CORES] = [0; TASK_STACK_SIZE * MAX_CORES];
@@ -186,7 +186,9 @@ pub unsafe extern "C" fn _start_secondary() -> ! {
     )
 }
 fn rust_main_secondary() {
-    putchar((48^cpu_id()).try_into().unwrap());
-    putchar((51^cpu_id()).try_into().unwrap());
-    unsafe{core::arch::asm!("wfi");}
+    putchar((48 ^ cpu_id()).try_into().unwrap());
+    putchar((51 ^ cpu_id()).try_into().unwrap());
+    unsafe {
+        core::arch::asm!("wfi");
+    }
 }
