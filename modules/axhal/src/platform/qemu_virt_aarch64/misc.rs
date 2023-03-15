@@ -51,8 +51,8 @@ pub fn terminate() -> ! {
     unreachable!("It should shutdown!")
 }
 
-pub fn start(id: usize, entry: *const u8) {
+pub fn start(id: usize, entry: usize, arg: usize) {
     info!("Starting core {}...", id);
-    assert_eq!(METHOD(PSCI_CPU_ON, id, entry as usize, 0), 0);
+    assert_eq!(METHOD(PSCI_CPU_ON, id, entry, arg), 0);
     info!("Started core {}!", id);
 }

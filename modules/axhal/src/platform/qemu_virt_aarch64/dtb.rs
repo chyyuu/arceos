@@ -4,10 +4,9 @@ use fdt_rs::{
 };
 use lazy_init::LazyInit;
 
-use crate::{
-    mem::phys_to_virt,
-    platform::qemu_virt_aarch64::lcpu::{add_lcpu, cpu_id},
-};
+#[cfg(feature = "smp")]
+use crate::lcpu::add_lcpu;
+use crate::{arch::cpu_id, mem::phys_to_virt};
 static TREE: LazyInit<DevTree> = LazyInit::new();
 pub(crate) fn init(_dtb: *const u8) {
     TREE.init_by(
@@ -47,6 +46,7 @@ macro_rules! devices {
         })
     };
 }
+#[cfg(feature = "smp")]
 pub fn smp_init() {
     let a = get_node("cpus")
         .map(|n| get_prop(&n, "#address-cells").u32(0).unwrap())
@@ -59,9 +59,9 @@ pub fn smp_init() {
             Some(n) => {
                 let p = get_prop(&n, "reg");
                 let id = if a == 1 {
-                    p.u32(0).unwrap() as u64
+                    p.u32(0).unwrap() as usize
                 } else {
-                    p.u64(0).unwrap()
+                    p.u64(0).unwrap() as usize
                 };
                 if id != bsp_id {
                     add_lcpu(id);

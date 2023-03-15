@@ -148,16 +148,6 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     #[cfg(feature = "smp")]
     self::mp::start_secondary_cpus(cpu_id);
 
-    #[cfg(all(target_arch = "aarch64", feature = "smp"))]
-    {
-        use axhal::MAX_CORES;
-        let mut i = 1;
-        while i < MAX_CORES {
-            axhal::start(i);
-            i += 1;
-        }
-    }
-
     unsafe { main() };
 
     axtask::exit(0)
@@ -210,6 +200,9 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     Ok(())
 }
 
+pub const RUN_IRQ: usize = 5;
+pub const WAKE_IRQ: usize = 6;
+
 fn init_interrupt() {
     use axconfig::SMP;
     use axhal::time::TIMER_IRQ_NUM;
@@ -241,6 +234,9 @@ fn init_interrupt() {
             axtask::on_timer_tick();
         }
     });
+
+    #[cfg(feature = "smp")]
+    axhal::lcpu::irq_init(RUN_IRQ, WAKE_IRQ);
 
     // Enable IRQs before starting app
     axhal::arch::enable_irqs();

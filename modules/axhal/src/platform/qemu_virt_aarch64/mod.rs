@@ -1,13 +1,16 @@
+#[cfg(feature = "smp")]
+use crate::lcpu;
+
 mod boot;
 mod dtb;
 mod generic_timer;
-pub mod lcpu;
 mod pl011;
 
 pub mod console;
 pub mod irq;
 pub mod mem;
 pub mod misc;
+
 pub mod mp;
 
 pub mod time {
@@ -29,6 +32,18 @@ pub(crate) fn platform_init(_dtb: *const u8) {
         .unwrap_or(dtb::prop_str("arm,psci-0.2", "method").unwrap());
     misc::init(method);
     self::irq::init_percpu(0); // TODO
-    lcpu::lcpu_init();
-    dtb::smp_init();
+    #[cfg(feature = "smp")]
+    {
+        lcpu::lcpu_init();
+        dtb::smp_init();
+    }
+}
+
+#[cfg(feature = "smp")]
+pub(crate) fn platform_init_secondary(_dtb: *const u8) {
+    extern "C" {
+        fn exception_vector_base();
+    }
+    crate::arch::set_exception_vector_base(exception_vector_base as usize);
+    self::irq::init_percpu(crate::arch::cpu_id());
 }

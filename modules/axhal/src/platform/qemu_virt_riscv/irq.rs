@@ -61,3 +61,7 @@ pub fn dispatch_irq(scause: usize) {
 }
 
 pub(super) fn init() {}
+
+pub fn gen_sgi_to_cpu(sgi_id: u32, cpu_id: usize) {
+    unimplemented!();
+}

@@ -84,6 +84,17 @@ pub enum Polarity {
     ActiveHigh = 0,
     ActiveLow = 1,
 }
+enum SgiFilter {
+    ToList = 0,
+    ToOthers = 1,
+    ToSelf = 2,
+    MAX = 3,
+}
+
+const GICD_SGI_TARGET_SHIFT: u32 = 16;
+const GICD_SGI_TARGET_MASK: u32 = 0xff;
+const GICD_SGI_FILTER_SHIFT: u32 = 24;
+const GICD_SGI_FILTER_MASK: u32 = 0x3;
 
 pub struct GicDistributor {
     base: NonNull<GicDistributorRegs>,
@@ -174,6 +185,17 @@ impl GicDistributor {
 
         // enable GIC0
         self.regs().CTLR.set(1);
+    }
+
+    fn gen_sgi(&mut self, id: u32, filter: SgiFilter, target: u32) {
+        self.regs().SGIR.set(
+            id | (filter as u32 & GICD_SGI_FILTER_MASK) << GICD_SGI_FILTER_SHIFT
+                | (target & GICD_SGI_TARGET_MASK) << GICD_SGI_TARGET_SHIFT,
+        );
+    }
+
+    pub fn gen_sgi_to_cpu(&mut self, sgi_id: u32, cpu_id: usize) {
+        self.gen_sgi(sgi_id, SgiFilter::ToList, 1 << (cpu_id & 7));
     }
 }
 

@@ -2,7 +2,7 @@ use handler_table::HandlerTable;
 
 use crate::platform::irq::MAX_IRQ_COUNT;
 
-pub use crate::platform::irq::{dispatch_irq, register_handler, set_enable};
+pub use crate::platform::irq::{dispatch_irq, gen_sgi_to_cpu, register_handler, set_enable};
 pub use handler_table::Handler as IrqHandler;
 
 static IRQ_HANDLER_TABLE: HandlerTable<MAX_IRQ_COUNT> = HandlerTable::new();

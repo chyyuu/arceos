@@ -1,3 +1,4 @@
+use crate::mem::phys_to_virt;
 use aarch64_cpu::{asm, asm::barrier, registers::*};
 use memory_addr::PhysAddr;
 use page_table_entry::{aarch64::A64PTE, GenericPTE, MappingFlags};
@@ -5,12 +6,8 @@ use tock_registers::interfaces::{ReadWriteable, Readable, Writeable};
 
 use axconfig::TASK_STACK_SIZE;
 
-use crate::console::putchar;
-
-use super::lcpu::{cpu_id, CPU_ID_MASK, MAX_CORES};
-
 #[link_section = ".bss.stack"]
-static mut BOOT_STACK: [u8; TASK_STACK_SIZE * MAX_CORES] = [0; TASK_STACK_SIZE * MAX_CORES];
+static mut BOOT_STACK: [u8; TASK_STACK_SIZE] = [0; TASK_STACK_SIZE];
 
 #[link_section = ".data.boot_page_table"]
 static mut BOOT_PT_L0: [A64PTE; 512] = [A64PTE::empty(); 512];
@@ -129,7 +126,8 @@ unsafe extern "C" fn _start() -> ! {
         bl      {init_boot_page_table}
         bl      {init_mmu}              // setup MMU
 
-        ldr     x8, =boot_stack_top     // set SP to the high address
+        ldr     x8, ={BOOT_STACK}     // set SP to the high address
+        add     x8, x8, {TASK_STACK_SIZE}
         mov     sp, x8
 
         mov     x0, x19
@@ -146,53 +144,48 @@ unsafe extern "C" fn _start() -> ! {
         switch_to_el1 = sym switch_to_el1,
         init_boot_page_table = sym init_boot_page_table,
         init_mmu = sym init_mmu,
+        BOOT_STACK = sym BOOT_STACK,
+        TASK_STACK_SIZE = const TASK_STACK_SIZE,
         platform_init = sym super::platform_init,
         rust_main = sym rust_main,
         options(noreturn),
     )
 }
 
+#[cfg(feature = "smp")]
 #[naked]
 #[no_mangle]
 #[link_section = ".text.boot"]
-pub unsafe extern "C" fn _start_secondary() -> ! {
+unsafe extern "C" fn _start_secondary() -> ! {
+    extern "Rust" {
+        fn rust_main_secondary();
+    }
     core::arch::asm!("
-        adrp    x8, boot_stack_top
-        mrs     x0, mpidr_el1
-        ldr     x1, ={CPU_ID_MASK}
-        and     x0, x0, x1
-        mov     x1, {TASK_STACK_SIZE}
-        mul     x0, x0, x1
-        sub     x8, x8, x0
-        mov     sp, x8
+        // todo: x0 should be address of args
+        mov     sp, x0
         bl      {switch_to_el1}
         bl      {init_mmu}
 
         // set SP to the high address
-        ldr     x8, =boot_stack_top
+        ldr     x8, ={phys_to_virt}
+        mov     x0, sp
+        blr     x8
+        mov     sp, x0
+
+        ldr     x8, ={platform_init_secondary}
+        blr     x8
+
         mrs     x0, mpidr_el1
-        ldr     x1, ={CPU_ID_MASK}
-        and     x0, x0, x1
-        mov     x1, {TASK_STACK_SIZE}
-        mul     x0, x0, x1
-        sub     x8, x8, x0
-        mov     sp, x8
+        and     x0, x0, #0xffffff       // get current CPU id
 
         ldr     x8, ={rust_main_secondary}
         blr     x8
         b      .",
         switch_to_el1 = sym switch_to_el1,
-        CPU_ID_MASK = const CPU_ID_MASK,
-        TASK_STACK_SIZE = const TASK_STACK_SIZE,
         init_mmu = sym init_mmu,
+        phys_to_virt = sym phys_to_virt,
+        platform_init_secondary = sym super::platform_init_secondary,
         rust_main_secondary = sym rust_main_secondary,
         options(noreturn),
     )
-}
-fn rust_main_secondary() {
-    putchar((48 ^ cpu_id()).try_into().unwrap());
-    putchar((51 ^ cpu_id()).try_into().unwrap());
-    unsafe {
-        core::arch::asm!("wfi");
-    }
 }

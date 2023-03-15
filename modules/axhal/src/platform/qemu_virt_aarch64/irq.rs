@@ -35,3 +35,8 @@ pub(super) fn init() {
 pub(super) fn init_percpu(_cpu_id: usize) {
     GICC.init();
 }
+
+pub fn gen_sgi_to_cpu(sgi_id: u32, cpu_id: usize) {
+    GICD.lock().gen_sgi_to_cpu(sgi_id, cpu_id);
+    info!("gen sgi {} to cpu {}", sgi_id, cpu_id);
+}

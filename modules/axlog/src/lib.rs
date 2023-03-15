@@ -124,7 +124,7 @@ impl Log for Logger {
                 if let Some(tid) = tid {
                     __print_impl(with_color!(
                         ColorCode::White,
-                        "[{:>3}.{:06} {cpuid}:{tid} {path}:{line} {args}\n",
+                        "[{:>3}.{:06} {cpuid}:{tid} {path}:{line}] {args}\n",
                         now.as_secs(),
                         now.subsec_micros(),
                         cpuid = cpuid,
@@ -136,7 +136,7 @@ impl Log for Logger {
                 } else {
                     __print_impl(with_color!(
                         ColorCode::White,
-                        "[{:>3}.{:06} {cpuid} {path}:{line} {args}\n",
+                        "[{:>3}.{:06} {cpuid} {path}:{line}] {args}\n",
                         now.as_secs(),
                         now.subsec_micros(),
                         cpuid = cpuid,

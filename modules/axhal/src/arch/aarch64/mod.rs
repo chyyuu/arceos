@@ -70,8 +70,10 @@ pub fn set_exception_vector_base(vbar_el1: usize) {
     VBAR_EL1.set(vbar_el1 as _);
 }
 
+pub const CPU_ID_MASK: usize = 0xff00ffffff;
+
 #[inline]
 pub fn cpu_id() -> usize {
     // TODO: use `current_cpu().id`
-    (MPIDR_EL1.get() & 0xff_ff_ff) as usize
+    MPIDR_EL1.get() as usize & CPU_ID_MASK
 }
