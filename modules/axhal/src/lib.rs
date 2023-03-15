@@ -31,3 +31,5 @@ pub mod misc {
 pub mod mp {
     pub use super::platform::mp::*;
 }
+#[cfg(all(target_arch = "aarch64", feature = "smp"))]
+pub use platform::lcpu::{start, MAX_CORES};

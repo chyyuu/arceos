@@ -51,7 +51,8 @@ impl Pl011Uart {
         unsafe { &*(self.base_vaddr.as_ptr() as *const _) }
     }
 
-    fn init(&mut self) {
+    fn init(&mut self, addr: usize) {
+        self.base_vaddr = phys_to_virt(addr.into());
         // clear all irqs
         self.regs().icr.set(0x3ff);
 
@@ -87,6 +88,6 @@ pub(super) fn console_getchar() -> Option<u8> {
     UART.lock().getchar()
 }
 
-pub(super) fn init() {
-    UART.lock().init();
+pub(super) fn init(addr: usize) {
+    UART.lock().init(addr);
 }

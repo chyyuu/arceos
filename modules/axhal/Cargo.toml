@@ -9,10 +9,7 @@ authors = ["Yuekai Jia <equation618@gmail.com>"]
 [features]
 smp = []
 platform-qemu-virt-riscv = ["axconfig/platform-qemu-virt-riscv"]
-platform-qemu-virt-aarch64 = [
-    "axconfig/platform-qemu-virt-aarch64",
-    "dep:page_table_entry", "dep:ratio",
-]
+platform-qemu-virt-aarch64 = ["axconfig/platform-qemu-virt-aarch64", "dep:page_table_entry", "dep:ratio"]
 paging = ["axalloc", "page_table"]
 default = []
 
@@ -44,6 +41,7 @@ sbi-rt = { version = "0.0.2", features = ["legacy"] }
 aarch64-cpu = "9.3"
 tock-registers = "0.8"
 arm_gic = { path = "../../crates/arm_gic" }
+fdt-rs = { version = "0.4.3", default-features = false }
 
 [build-dependencies]
 axconfig = { path = "../axconfig" }

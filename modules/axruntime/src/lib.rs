@@ -2,6 +2,7 @@
 
 #[macro_use]
 extern crate axlog;
+extern crate axhal;
 
 #[cfg(not(test))]
 mod lang_items;
@@ -146,6 +147,16 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
 
     #[cfg(feature = "smp")]
     self::mp::start_secondary_cpus(cpu_id);
+
+    #[cfg(all(target_arch = "aarch64", feature = "smp"))]
+    {
+        use axhal::MAX_CORES;
+        let mut i = 1;
+        while i < MAX_CORES {
+            axhal::start(i);
+            i += 1;
+        }
+    }
 
     unsafe { main() };
 
