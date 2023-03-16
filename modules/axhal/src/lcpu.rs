@@ -5,14 +5,14 @@ use spinlock::SpinNoIrq;
 use crate::{
     arch::{cpu_id, CPU_ID_MASK},
     irq,
-    mp::start_secondary_cpu,
+    platform::mp::start_secondary_cpu,
 };
 pub const MAX_CORES: usize = 4;
 enum LCPUState {
     OFFLINE,
     INIT,
-    IDLE,
-    BUSY,
+    // IDLE,
+    // BUSY,
 }
 struct LCPU {
     id: usize,

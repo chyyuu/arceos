@@ -86,9 +86,9 @@ pub enum Polarity {
 }
 enum SgiFilter {
     ToList = 0,
-    ToOthers = 1,
-    ToSelf = 2,
-    MAX = 3,
+    // ToOthers = 1,
+    // ToSelf = 2,
+    // MAX = 3,
 }
 
 const GICD_SGI_TARGET_SHIFT: u32 = 16;

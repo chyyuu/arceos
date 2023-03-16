@@ -3,7 +3,6 @@ use axhal::{
     arch::{cpu_id, enable_irqs, irqs_enabled, wait_for_irqs},
     lcpu::{send_task, start},
     mem::{virt_to_phys, VirtAddr},
-    misc::terminate,
 };
 
 use crate::RUN_IRQ;
@@ -41,14 +40,17 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     }
     if cpu_id == 3 {
         send_task(RUN_IRQ, 1, test_irq);
-    } else if cpu_id == 1 {
-        loop {
-            wait_for_irqs(); // TODO
-        }
     }
-    terminate();
+    loop {
+        wait_for_irqs(); // TODO
+    }
 }
 
 fn test_irq() {
-    info!("Secondary CPU {} receive a task.", cpu_id());
+    if cpu_id() != 0 {
+        info!("Secondary CPU {} run a task.", cpu_id());
+        send_task(RUN_IRQ, (cpu_id() + 1) & 3, test_irq);
+    } else {
+        info!("Primary CPU {} run a task.", cpu_id());
+    }
 }
