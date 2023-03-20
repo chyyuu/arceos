@@ -15,6 +15,7 @@ extern "C" {
 }
 
 pub fn start_secondary_cpus(primary_cpu_id: usize) {
+    lcpu_started();
     let entry = virt_to_phys(VirtAddr::from(_start_secondary as usize));
     let mut logic_cpu_id = 0;
     for i in 0..SMP {

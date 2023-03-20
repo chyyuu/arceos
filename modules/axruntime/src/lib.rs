@@ -145,8 +145,6 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
     info!("Initialize interrupt handlers...");
     init_interrupt();
 
-    #[cfg(target_arch = "aarch64")]
-    axhal::lcpu::lcpu_started();
     #[cfg(feature = "smp")]
     self::mp::start_secondary_cpus(cpu_id);
 
