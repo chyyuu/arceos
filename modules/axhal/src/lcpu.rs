@@ -149,7 +149,8 @@ pub fn lcpu_irq_init(run_irq: usize, wakeup_irq: usize) {
         lcpu.finish_task();
     });
     irq::register_handler(wakeup_irq, || {
-        info!("Core {} wake up", cpu_id());});
+        info!("Core {} wake up", cpu_id());
+    });
 }
 pub fn lcpu_run(run_irq: usize, idx: usize, task: fn()) {
     let lcpu = LCPUMANAGER.get_lcpu(idx);
