@@ -5,7 +5,7 @@ use fdt_rs::{
 use lazy_init::LazyInit;
 
 #[cfg(feature = "smp")]
-use crate::lcpu::add_lcpu;
+use crate::lcpu::lcpu_add;
 use crate::{arch::cpu_id, mem::phys_to_virt};
 static TREE: LazyInit<DevTree> = LazyInit::new();
 pub(crate) fn init(_dtb: *const u8) {
@@ -64,7 +64,7 @@ pub fn smp_init() {
                     p.u64(0).unwrap() as usize
                 };
                 if id != bsp_id {
-                    add_lcpu(id);
+                    lcpu_add(id);
                     assert_eq!(get_prop(&n, "enable-method").str(), Ok("psci"));
                 }
             }

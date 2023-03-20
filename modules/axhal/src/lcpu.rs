@@ -1,122 +1,166 @@
+use core::mem::transmute;
+use core::sync::atomic::AtomicUsize;
+use core::sync::atomic::Ordering::SeqCst;
+
+use axconfig::SMP;
 use lazy_init::LazyInit;
 use memory_addr::PhysAddr;
-use spinlock::SpinNoIrq;
 
 use crate::{
-    arch::{cpu_id, CPU_ID_MASK},
+    arch::{cpu_id, wait_for_irqs},
     irq,
     platform::mp::start_secondary_cpu,
 };
-pub const MAX_CORES: usize = 4;
-enum LCPUState {
-    OFFLINE,
-    INIT,
-    // IDLE,
-    // BUSY,
+const OFFLINE: usize = 0;
+const INIT: usize = OFFLINE + 1;
+const IDLE: usize = INIT + 1;
+const BUSY: usize = IDLE + 1;
+struct LCPUState(AtomicUsize);
+impl LCPUState {
+    pub fn compare_exchange(&self, old: usize, new: usize) -> Result<usize, usize> {
+        self.0.compare_exchange(old, new, SeqCst, SeqCst)
+    }
+    pub fn is_online(&self) -> bool {
+        self.0.load(SeqCst) >= IDLE
+    }
+    pub fn is_busy(&self) -> bool {
+        self.0.load(SeqCst) >= BUSY
+    }
+    pub fn add(&self, inc: usize) -> usize {
+        self.0.fetch_add(inc, SeqCst)
+    }
+    pub fn sub(&self, dec: usize) -> usize {
+        self.0.fetch_sub(dec, SeqCst)
+    }
+    pub fn store(&self, state: usize) {
+        self.0.store(state, SeqCst)
+    }
 }
 struct LCPU {
-    id: usize,
+    pub id: usize,
     state: LCPUState,
-    task: fn(),
+    task: AtomicUsize,
 }
 impl LCPU {
-    pub fn new(id: usize, state: LCPUState) -> Self {
+    pub fn new(id: usize, state: usize) -> Self {
         Self {
             id,
-            state,
-            task: || {},
+            state: LCPUState(state.into()),
+            task: 0.into(),
         }
     }
-    pub fn start(&mut self, entry: PhysAddr, args: PhysAddr) {
-        match self.state {
-            LCPUState::OFFLINE => {
-                start_secondary_cpu(self.id, entry, args);
-                self.state = LCPUState::INIT;
+    pub fn start(&self, entry: PhysAddr, args: PhysAddr) {
+        if self.state.compare_exchange(OFFLINE, INIT).is_ok() {
+            start_secondary_cpu(self.id, entry, args);
+        }
+    }
+    pub fn set_task(&self, task: fn()) {
+        loop {
+            if !self.state.is_online() {
+                wait_for_irqs();
+                continue;
             }
-            _ => {}
+            self.state.add(1);
+            if self
+                .task
+                .compare_exchange(0, task as usize, SeqCst, SeqCst)
+                .is_err()
+            {
+                self.state.sub(1);
+                wait_for_irqs();
+                continue;
+            }
+            break;
         }
     }
-    pub fn set_task(&mut self, task: fn()) {
-        self.task = task.clone();
+    pub fn get_task(&self) -> fn() {
+        let f = self.task.swap(0, SeqCst);
+        if f == 0 {
+            return || {};
+        }
+        unsafe { transmute(f) }
     }
-    pub fn get_task(&mut self) -> fn() {
-        let task = self.task;
-        self.task = || {};
-        task
+    pub fn is_busy(&self) -> bool {
+        self.state.is_busy()
+    }
+    pub fn finish_task(&self) {
+        self.state.sub(1);
+    }
+    pub fn set_state(&self, state: usize) {
+        self.state.store(state);
     }
 }
 struct LCPUManager {
-    count: usize,
-    lcpus: [LCPU; MAX_CORES],
+    count: AtomicUsize,
+    lcpus: [LazyInit<LCPU>; SMP],
 }
+const LCPUINIT: LazyInit<LCPU> = LazyInit::new();
 impl LCPUManager {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
-            count: 1,
-            lcpus: [
-                LCPU::new(cpu_id(), LCPUState::INIT),
-                LCPU::new(CPU_ID_MASK, LCPUState::OFFLINE),
-                LCPU::new(CPU_ID_MASK, LCPUState::OFFLINE),
-                LCPU::new(CPU_ID_MASK, LCPUState::OFFLINE),
-            ],
+            count: AtomicUsize::new(0),
+            lcpus: [LCPUINIT; SMP],
         }
     }
-    pub fn add(&mut self, id: usize) {
-        self.lcpus[self.count] = LCPU::new(id, LCPUState::OFFLINE);
-        self.count += 1;
+    pub fn init(&self) {
+        self.add(cpu_id(), BUSY);
+    }
+    pub fn add(&self, id: usize, state: usize) {
+        let idx = self.count.fetch_add(1, SeqCst);
+        assert!(idx < SMP);
+        self.lcpus[idx].init_by(LCPU::new(id, state));
     }
     pub fn get_idx(&self, id: usize) -> usize {
-        for idx in 0..self.count {
+        let count = self.count.load(SeqCst);
+        for idx in 0..count {
             if self.lcpus[idx].id == id {
                 return idx;
             }
         }
-        self.count
+        unreachable!("CPU not found");
     }
-    pub fn start(&mut self, id: usize, entry: PhysAddr, arg: PhysAddr) {
-        let idx = self.get_idx(id);
-        if idx < self.count {
-            self.lcpus[idx].start(entry, arg);
-        }
+    pub fn get_lcpu(&self, idx: usize) -> &LCPU {
+        assert!(idx < SMP);
+        &self.lcpus[idx]
     }
-    pub fn set_task(&mut self, id: usize, task: fn()) {
-        let idx = self.get_idx(id);
-        if idx < self.count {
-            self.lcpus[idx].set_task(task);
-        }
-    }
-    pub fn get_task(&mut self, id: usize) -> fn() {
-        let idx = self.get_idx(id);
-        if idx < self.count {
-            return self.lcpus[idx].get_task();
-        }
-        return || {};
+    pub fn current_lcpu(&self) -> &LCPU {
+        self.get_lcpu(self.get_idx(cpu_id()))
     }
 }
-static LCPUMANAGER: LazyInit<SpinNoIrq<LCPUManager>> = LazyInit::new();
+static LCPUMANAGER: LCPUManager = LCPUManager::new();
 pub fn lcpu_init() {
-    LCPUMANAGER.init_by(SpinNoIrq::new(LCPUManager::new()));
+    LCPUMANAGER.init();
 }
-pub fn add_lcpu(id: usize) {
-    LCPUMANAGER.lock().add(id);
+pub fn lcpu_add(id: usize) {
+    LCPUMANAGER.add(id, OFFLINE);
 }
-pub fn start(id: usize, entry: PhysAddr, args: PhysAddr) {
-    LCPUMANAGER.lock().start(id, entry, args);
+pub fn lcpu_start(idx: usize, entry: PhysAddr, args: PhysAddr) {
+    LCPUMANAGER.get_lcpu(idx).start(entry, args);
 }
-fn set_task(id: usize, task: fn()) {
-    LCPUMANAGER.lock().set_task(id, task);
+pub fn lcpu_started() {
+    LCPUMANAGER.current_lcpu().set_state(IDLE);
 }
-fn get_task() -> fn() {
-    LCPUMANAGER.lock().get_task(cpu_id())
-}
-pub fn irq_init(run_irq: usize, wake_irq: usize) {
+pub fn lcpu_irq_init(run_irq: usize, wakeup_irq: usize) {
     irq::register_handler(run_irq, || {
+        let lcpu = LCPUMANAGER.current_lcpu();
+        assert!(lcpu.is_busy());
         info!("Core {} receive a task", cpu_id());
-        get_task()();
+        lcpu.get_task()();
+        lcpu.finish_task();
     });
-    irq::register_handler(wake_irq, || {});
+    irq::register_handler(wakeup_irq, || {
+        info!("Core {} wake up", cpu_id());});
 }
-pub fn send_task(run_irq: usize, id: usize, task: fn()) {
-    set_task(id, task);
-    irq::gen_sgi_to_cpu(run_irq as u32, id);
+pub fn lcpu_run(run_irq: usize, idx: usize, task: fn()) {
+    let lcpu = LCPUMANAGER.get_lcpu(idx);
+    lcpu.set_task(task);
+    irq::gen_sgi_to_cpu(run_irq as u32, lcpu.id);
+}
+pub fn lcpu_wakeup(wakeup_irq: usize, idx: usize) {
+    irq::gen_sgi_to_cpu(wakeup_irq as u32, LCPUMANAGER.get_lcpu(idx).id);
+}
+pub fn lcpu_wait(idx: usize) {
+    while LCPUMANAGER.get_lcpu(idx).is_busy() {
+        wait_for_irqs();
+    }
 }

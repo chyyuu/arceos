@@ -1,11 +1,11 @@
 use axconfig::{SMP, TASK_STACK_SIZE};
 use axhal::{
     arch::{cpu_id, enable_irqs, irqs_enabled, wait_for_irqs},
-    lcpu::{send_task, start},
+    lcpu::{lcpu_run, lcpu_start, lcpu_started, lcpu_wait, lcpu_wakeup},
     mem::{virt_to_phys, VirtAddr},
 };
 
-use crate::RUN_IRQ;
+use crate::{RUN_IRQ, WAKE_IRQ};
 
 #[link_section = ".bss.stack"]
 static mut SECONDARY_BOOT_STACK: [[u8; TASK_STACK_SIZE]; SMP - 1] = [[0; TASK_STACK_SIZE]; SMP - 1];
@@ -25,9 +25,13 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
 
             debug!("starting CPU {}...", i);
             // todo: args should be address of args
-            start(i, entry, stack_top);
+            lcpu_start(i, entry, stack_top);
             logic_cpu_id += 1;
         }
+        lcpu_run(RUN_IRQ, i, test_irq);
+    }
+    for i in 0..SMP {
+        lcpu_wait(i);
     }
 }
 
@@ -38,9 +42,7 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     if irqs_enabled() {
         info!("Secondary CPU {} enabled irq.", cpu_id);
     }
-    if cpu_id == 3 {
-        send_task(RUN_IRQ, 1, test_irq);
-    }
+    lcpu_started();
     loop {
         wait_for_irqs(); // TODO
     }
@@ -49,7 +51,7 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
 fn test_irq() {
     if cpu_id() != 0 {
         info!("Secondary CPU {} run a task.", cpu_id());
-        send_task(RUN_IRQ, (cpu_id() + 1) & 3, test_irq);
+        lcpu_wakeup(WAKE_IRQ, 0);
     } else {
         info!("Primary CPU {} run a task.", cpu_id());
     }
