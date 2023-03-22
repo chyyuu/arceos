@@ -59,4 +59,7 @@ pub mod irq {
     pub fn dispatch_irq(irq_num: usize) {}
 
     pub fn gen_sgi_to_cpu(sgi_id: u32, cpu_id: usize) {}
+
+    pub const RUN_IRQ: usize = 5;
+    pub const WAKE_IRQ: usize = 6;
 }
