@@ -3,7 +3,7 @@ pub(crate) mod trap;
 
 use core::arch::asm;
 
-use aarch64_cpu::registers::{DAIF, MPIDR_EL1, TTBR1_EL1, VBAR_EL1};
+use aarch64_cpu::registers::{DAIF, TTBR1_EL1, VBAR_EL1};
 use memory_addr::{PhysAddr, VirtAddr};
 use tock_registers::interfaces::{Readable, Writeable};
 
@@ -68,12 +68,4 @@ pub fn flush_icache_all() {
 #[inline]
 pub fn set_exception_vector_base(vbar_el1: usize) {
     VBAR_EL1.set(vbar_el1 as _);
-}
-
-pub const CPU_ID_MASK: usize = 0xff00ffffff;
-
-#[inline]
-pub fn cpu_id() -> usize {
-    // TODO: use `current_cpu().id`
-    MPIDR_EL1.get() as usize & CPU_ID_MASK
 }

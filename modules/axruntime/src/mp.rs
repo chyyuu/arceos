@@ -1,6 +1,7 @@
 use axconfig::{SMP, TASK_STACK_SIZE};
 use axhal::{
-    arch::{cpu_id, enable_irqs, irqs_enabled, wait_for_irqs},
+    arch::wait_for_irqs,
+    cpu::this_cpu_id as cpu_id,
     lcpu::{lcpu_run, lcpu_start, lcpu_started, lcpu_wait, lcpu_wakeup},
     mem::{virt_to_phys, VirtAddr},
 };
@@ -39,10 +40,18 @@ pub fn start_secondary_cpus(primary_cpu_id: usize) {
 #[no_mangle]
 pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     info!("Secondary CPU {} started.", cpu_id);
-    enable_irqs();
-    if irqs_enabled() {
-        info!("Secondary CPU {} enabled irq.", cpu_id);
+
+    #[cfg(feature = "paging")]
+    init_paging_secondary();
+
+    info!("Secondary CPU {} init OK.", cpu_id);
+    super::INITED_CPUS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
+
+    while !super::is_init_ok() {
+        core::hint::spin_loop();
     }
+
+    axhal::arch::enable_irqs();
     lcpu_started();
     loop {
         wait_for_irqs(); // TODO
@@ -57,3 +66,6 @@ fn test_irq() {
         info!("Primary CPU {} run a task.", cpu_id());
     }
 }
+
+#[cfg(feature = "paging")]
+fn init_paging_secondary() {}

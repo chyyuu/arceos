@@ -6,7 +6,7 @@ use lazy_init::LazyInit;
 
 #[cfg(feature = "smp")]
 use crate::lcpu::lcpu_add;
-use crate::{arch::cpu_id, mem::phys_to_virt};
+use crate::mem::phys_to_virt;
 static TREE: LazyInit<DevTree> = LazyInit::new();
 pub(crate) fn init(_dtb: *const u8) {
     TREE.init_by(
@@ -48,11 +48,13 @@ macro_rules! devices {
 }
 #[cfg(feature = "smp")]
 pub fn smp_init() {
+    use crate::cpu::this_cpu_id;
+
     let a = get_node("cpus")
         .map(|n| get_prop(&n, "#address-cells").u32(0).unwrap())
         .unwrap_or(2);
     assert!(a == 1 || a == 2);
-    let bsp_id = cpu_id();
+    let bsp_id = this_cpu_id();
     let mut iter = devices!("cpu");
     loop {
         match iter.next().unwrap() {

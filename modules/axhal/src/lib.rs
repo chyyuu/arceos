@@ -11,6 +11,7 @@ extern crate log;
 mod platform;
 
 pub mod arch;
+pub mod cpu;
 pub mod irq;
 #[cfg(feature = "smp")]
 pub mod lcpu;

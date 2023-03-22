@@ -7,9 +7,7 @@ use lazy_init::LazyInit;
 use memory_addr::PhysAddr;
 
 use crate::{
-    arch::{cpu_id, wait_for_irqs},
-    irq,
-    platform::mp::start_secondary_cpu,
+    arch::wait_for_irqs, cpu::this_cpu_id as cpu_id, irq, platform::mp::start_secondary_cpu,
 };
 const OFFLINE: usize = 0;
 const INIT: usize = OFFLINE + 1;
