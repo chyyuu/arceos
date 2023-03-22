@@ -25,3 +25,6 @@ pub(crate) fn register_handler_common(irq_num: usize, handler: IrqHandler) -> bo
     warn!("register handler for IRQ {} failed", irq_num);
     false
 }
+
+#[cfg(target_arch = "aarch64")]
+pub use crate::platform::irq::{RUN_IRQ, WAKE_IRQ};

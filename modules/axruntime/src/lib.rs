@@ -217,9 +217,6 @@ fn remap_kernel_memory() -> Result<(), axhal::paging::PagingError> {
     Ok(())
 }
 
-pub const RUN_IRQ: usize = 5;
-pub const WAKE_IRQ: usize = 6;
-
 fn init_interrupt() {
     use axhal::time::TIMER_IRQ_NUM;
 
@@ -249,8 +246,8 @@ fn init_interrupt() {
         }
     });
 
-    #[cfg(feature = "smp")]
-    axhal::lcpu::lcpu_irq_init(RUN_IRQ, WAKE_IRQ);
+    #[cfg(all(feature = "smp", target_arch = "aarch64"))]
+    axhal::lcpu::lcpu_irq_init();
 
     // Enable IRQs before starting app
     axhal::arch::enable_irqs();

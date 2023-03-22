@@ -39,3 +39,6 @@ pub(super) fn init_percpu(_cpu_id: usize) {
 pub fn gen_sgi_to_cpu(sgi_id: u32, cpu_id: usize) {
     GICD.lock().gen_sgi_to_cpu(sgi_id, cpu_id);
 }
+
+pub const RUN_IRQ: usize = 5;
+pub const WAKE_IRQ: usize = 6;
