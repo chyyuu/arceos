@@ -5,22 +5,26 @@ mod boot;
 mod dtb;
 mod generic_timer;
 mod pl011;
+mod psci;
 
 pub mod console;
 pub mod irq;
 pub mod mem;
-pub mod misc;
-
 pub mod mp;
 
 pub mod time {
     pub use super::generic_timer::*;
 }
 
-pub(crate) fn platform_init(_dtb: *const u8) {
-    extern "C" {
-        fn exception_vector_base();
-    }
+pub mod misc {
+    pub use super::psci::system_off as terminate;
+}
+
+extern "C" {
+    fn exception_vector_base();
+}
+
+pub(crate) fn platform_init(cpu_id: usize, _dtb: *const u8) {
     crate::mem::clear_bss();
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
     self::generic_timer::init();
@@ -30,8 +34,8 @@ pub(crate) fn platform_init(_dtb: *const u8) {
     self::pl011::init(addr);
     let method = dtb::prop_str("arm,psci-1.0", "method")
         .unwrap_or(dtb::prop_str("arm,psci-0.2", "method").unwrap());
-    misc::init(method);
-    self::irq::init_percpu(0); // TODO
+    psci::init(method);
+    self::irq::init_percpu(cpu_id);
     #[cfg(feature = "smp")]
     {
         lcpu::lcpu_init();
@@ -40,10 +44,8 @@ pub(crate) fn platform_init(_dtb: *const u8) {
 }
 
 #[cfg(feature = "smp")]
-pub(crate) fn platform_init_secondary(_dtb: *const u8) {
-    extern "C" {
-        fn exception_vector_base();
-    }
+pub(crate) fn platform_init_secondary(cpu_id: usize, _dtb: *const u8) {
     crate::arch::set_exception_vector_base(exception_vector_base as usize);
-    self::irq::init_percpu(crate::arch::cpu_id());
+    self::irq::init_percpu(cpu_id);
+    self::generic_timer::init_secondary();
 }
