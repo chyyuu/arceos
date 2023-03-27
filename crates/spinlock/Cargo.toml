@@ -12,4 +12,4 @@ default = []
 
 [dependencies]
 cfg-if = "1.0"
-crate_interface = { path = "../crate_interface" }
+kernel_guard = { path = "../kernel_guard" }

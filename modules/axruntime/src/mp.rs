@@ -35,7 +35,10 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     info!("Secondary CPU {} started.", cpu_id);
 
     #[cfg(feature = "paging")]
-    init_paging_secondary();
+    super::remap_kernel_memory().unwrap();
+
+    #[cfg(feature = "multitask")]
+    axtask::init_scheduler_secondary();
 
     info!("Secondary CPU {} init OK.", cpu_id);
     super::INITED_CPUS.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
@@ -45,11 +48,5 @@ pub extern "C" fn rust_main_secondary(cpu_id: usize) -> ! {
     }
 
     axhal::arch::enable_irqs();
-    lcpu_started();
-    loop {
-        wait_for_irqs(); // TODO
-    }
+    axtask::run_idle();
 }
-
-#[cfg(feature = "paging")]
-fn init_paging_secondary() {}
