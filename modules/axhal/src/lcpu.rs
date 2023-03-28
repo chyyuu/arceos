@@ -138,25 +138,28 @@ pub fn lcpu_start(idx: usize, entry: PhysAddr, args: PhysAddr) {
 pub fn lcpu_started() {
     LCPUMANAGER.current_lcpu().set_state(IDLE);
 }
+//Todo: these irq numbers are just for aarch64
+const RUN_IRQ: usize = 5;
+const WAKE_IRQ: usize = 6;
 pub fn lcpu_irq_init() {
-    irq::register_handler(irq::RUN_IRQ, || {
+    irq::register_handler(RUN_IRQ, || {
         let lcpu = LCPUMANAGER.current_lcpu();
         assert!(lcpu.is_busy());
         info!("Core {} receive a task", cpu_id());
         lcpu.get_task()();
         lcpu.finish_task();
     });
-    irq::register_handler(irq::WAKE_IRQ, || {
+    irq::register_handler(WAKE_IRQ, || {
         info!("Core {} wake up", cpu_id());
     });
 }
 pub fn lcpu_run(idx: usize, task: fn()) {
     let lcpu = LCPUMANAGER.get_lcpu(idx);
     lcpu.set_task(task);
-    irq::gen_sgi_to_cpu(irq::RUN_IRQ as u32, lcpu.id);
+    irq::gen_sgi_to_cpu(RUN_IRQ as u32, lcpu.id);
 }
 pub fn lcpu_wakeup(idx: usize) {
-    irq::gen_sgi_to_cpu(irq::WAKE_IRQ as u32, LCPUMANAGER.get_lcpu(idx).id);
+    irq::gen_sgi_to_cpu(WAKE_IRQ as u32, LCPUMANAGER.get_lcpu(idx).id);
 }
 pub fn lcpu_wait(idx: usize) {
     while LCPUMANAGER.get_lcpu(idx).is_busy() {

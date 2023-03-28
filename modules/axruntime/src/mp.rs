@@ -1,6 +1,5 @@
 use axconfig::{SMP, TASK_STACK_SIZE};
 use axhal::{
-    arch::wait_for_irqs,
     lcpu::{lcpu_start, lcpu_started},
     mem::{virt_to_phys, VirtAddr},
 };
