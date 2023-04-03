@@ -119,7 +119,9 @@ pub fn set_affinity(cpu_affinity: u64) {
 
 } else { // if #[cfg(feature = "multitask")]
 
-pub fn yield_now() {}
+pub fn yield_now() {
+    core::hint::spin_loop()
+}
 
 pub fn exit(exit_code: i32) -> ! {
     debug!("main task exited: exit_code={}", exit_code);
