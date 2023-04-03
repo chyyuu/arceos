@@ -31,3 +31,5 @@ impl Instant {
         Instant::now().0 - self.0
     }
 }
+
+pub use axhal::time::set_timer_interrupt;

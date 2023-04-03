@@ -113,6 +113,10 @@ pub fn exit(exit_code: i32) -> ! {
     RUN_QUEUE.lock().exit_current(exit_code)
 }
 
+pub fn set_affinity(cpu_affinity: u64) {
+    RUN_QUEUE.lock().set_current_affinity(cpu_affinity);
+}
+
 } else { // if #[cfg(feature = "multitask")]
 
 pub fn yield_now() {}

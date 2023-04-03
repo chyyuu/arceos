@@ -1,5 +1,6 @@
 use alloc::collections::VecDeque;
 use alloc::sync::Arc;
+use axhal::cpu::this_cpu_id;
 use lazy_init::LazyInit;
 use scheduler::BaseScheduler;
 use spinlock::SpinNoIrq;
@@ -135,6 +136,25 @@ impl AxRunQueue {
             self.resched_inner(false);
         }
     }
+
+    pub fn set_current_affinity(&mut self, cpu_affinity: u64) {
+        let curr = crate::current();
+        debug!(
+            "task set cpu affinity: {}, affinity={:?}",
+            curr.id_name(),
+            cpu_affinity
+        );
+        curr.set_affinity(cpu_affinity);
+        if (cpu_affinity >> this_cpu_id() & 1) == 0 {
+            debug!(
+                "task remove from cpu: {}, cpu={:?}",
+                curr.id_name(),
+                this_cpu_id()
+            );
+            assert!(curr.is_running());
+            self.resched_inner(false);
+        }
+    }
 }
 
 impl AxRunQueue {
@@ -152,7 +172,30 @@ impl AxRunQueue {
             // Safety: IRQs must be disabled at this time.
             IDLE_TASK.current_ref_raw().get_unchecked().clone()
         });
-        self.switch_to(prev, next);
+        if (next.get_affinity() >> this_cpu_id() & 1) == 1 {
+            self.switch_to(prev, next);
+            return;
+        }
+        let id = next.id();
+        self.scheduler.put_prev_task(next, false);
+        loop {
+            let next = self.scheduler.pick_next_task().unwrap_or_else(|| unsafe {
+                // Safety: IRQs must be disabled at this time.
+                IDLE_TASK.current_ref_raw().get_unchecked().clone()
+            });
+            if (next.get_affinity() >> this_cpu_id() & 1) == 1 {
+                self.switch_to(prev, next);
+                break;
+            }
+            let id1 = next.id();
+            self.scheduler.put_prev_task(next, false);
+            if id == id1 {
+                self.switch_to(prev, unsafe {
+                    IDLE_TASK.current_ref_raw().get_unchecked().clone()
+                });
+                break;
+            }
+        }
     }
 
     fn switch_to(&mut self, prev_task: CurrentTask, next_task: AxTaskRef) {

@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, sync::Arc};
+use axconfig::SMP;
 use core::ops::Deref;
 use core::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use core::{alloc::Layout, cell::UnsafeCell, fmt, ptr::NonNull};
@@ -39,6 +40,8 @@ pub struct TaskInner {
     need_resched: AtomicBool,
     #[cfg(feature = "preempt")]
     preempt_disable_count: AtomicUsize,
+
+    cpu_affinity: AtomicU64,
 
     kstack: Option<TaskStack>,
     ctx: UnsafeCell<TaskContext>,
@@ -84,6 +87,8 @@ impl TaskInner {
     }
 }
 
+const ALL_CPUS: u64 = (1 << SMP) - 1;
+
 // private methods
 impl TaskInner {
     const fn new_common(id: TaskId, name: &'static str) -> Self {
@@ -100,6 +105,7 @@ impl TaskInner {
             need_resched: AtomicBool::new(false),
             #[cfg(feature = "preempt")]
             preempt_disable_count: AtomicUsize::new(0),
+            cpu_affinity: AtomicU64::new(ALL_CPUS),
             kstack: None,
             ctx: UnsafeCell::new(TaskContext::new()),
         }
@@ -227,6 +233,16 @@ impl TaskInner {
     #[inline]
     pub(crate) const unsafe fn ctx_mut_ptr(&self) -> *mut TaskContext {
         self.ctx.get()
+    }
+
+    #[inline]
+    pub(crate) fn set_affinity(&self, cpu_affinity: u64) {
+        self.cpu_affinity.store(cpu_affinity, Ordering::Release);
+    }
+
+    #[inline]
+    pub(crate) fn get_affinity(&self) -> u64 {
+        self.cpu_affinity.load(Ordering::Acquire)
     }
 }
 

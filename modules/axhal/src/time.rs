@@ -1,5 +1,6 @@
 pub type TimeValue = core::time::Duration;
 
+use crate::irq::set_enable;
 pub use crate::platform::time::{
     current_ticks, nanos_to_ticks, set_oneshot_timer, ticks_to_nanos, TIMER_IRQ_NUM,
 };
@@ -16,4 +17,8 @@ pub fn current_time_nanos() -> u64 {
 
 pub fn current_time() -> TimeValue {
     TimeValue::from_nanos(current_time_nanos())
+}
+
+pub fn set_timer_interrupt(enabled: bool) {
+    set_enable(TIMER_IRQ_NUM, enabled);
 }

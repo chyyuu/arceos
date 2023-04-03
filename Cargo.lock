@@ -80,6 +80,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "arceos-nosched"
+version = "0.1.0"
+dependencies = [
+ "libax",
+]
+
+[[package]]
 name = "arceos-parallel"
 version = "0.1.0"
 dependencies = [
