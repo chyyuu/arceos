@@ -12,13 +12,13 @@ use libax::task;
 use libax::task::set_affinity;
 use libax::time::{set_timer_interrupt, Instant};
 
-const NUM_DATA: usize = 2_000_000_0;
+const NUM_DATA: usize = 20_000_000;
 const NUM_TASKS: usize = 4;
 
 static FINISHED_TASKS: AtomicUsize = AtomicUsize::new(0);
 
 static MAIN_WQ: WaitQueue = WaitQueue::new();
-static RESULTS: Mutex<[u64; NUM_TASKS as usize]> = Mutex::new([0; NUM_TASKS as usize]); // TODO: task join
+static RESULTS: Mutex<[u64; NUM_TASKS]> = Mutex::new([0; NUM_TASKS]); // TODO: task join
 
 fn sqrt(n: u64) -> u64 {
     let mut x = n;
