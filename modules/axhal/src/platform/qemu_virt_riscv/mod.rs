@@ -27,3 +27,7 @@ pub(crate) fn platform_init_secondary(cpu_id: usize) {
     crate::cpu::init_percpu(cpu_id, false);
     self::time::init();
 }
+
+pub fn cmdline() -> &'static str {
+    ""
+}

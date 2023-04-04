@@ -9,6 +9,7 @@
 extern crate log;
 
 mod platform;
+pub use platform::cmdline;
 
 pub mod arch;
 pub mod cpu;

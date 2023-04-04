@@ -145,6 +145,8 @@ pub extern "C" fn rust_main(cpu_id: usize, dtb: usize) -> ! {
         core::hint::spin_loop();
     }
 
+    info!("Kernel command line: {}", axhal::cmdline());
+
     unsafe { main() };
 
     axtask::exit(0)

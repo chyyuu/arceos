@@ -76,3 +76,15 @@ pub fn smp_init() {
         }
     }
 }
+pub fn cmdline() -> &'static str {
+    get_node("chosen")
+        .map(|n| {
+            n.props()
+                .filter(|p| p.name().map(|s| s == "bootargs"))
+                .next()
+                .unwrap()
+                .map(|p| p.str().unwrap())
+        })
+        .unwrap_or_default()
+        .unwrap_or_default()
+}

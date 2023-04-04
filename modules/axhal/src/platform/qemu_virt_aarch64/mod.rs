@@ -3,6 +3,7 @@ use crate::lcpu;
 
 mod boot;
 mod dtb;
+pub use dtb::cmdline;
 mod generic_timer;
 mod pl011;
 mod psci;
