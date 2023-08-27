@@ -69,6 +69,11 @@ members = [
     "apps/task/yield",
     "apps/task/priority",
     "apps/task/tls",
+
+    "apps/std/mio-httpserver",
+    "apps/std/mio-tcpserver",
+    "apps/std/tokio-echo",
+    "apps/std/socket2-echoserver",
 ]
 
 [profile.release]
@@ -76,3 +81,6 @@ lto = true
 
 [patch.crates-io]
 crate_interface = { path = "crates/crate_interface" }
+mio = { git = "https://github.com/arceos-os/mio.git", branch = "arceos" }
+tokio = { git = "https://github.com/arceos-os/tokio.git", branch = "arceos" }
+socket2 = { git = "https://github.com/arceos-os/socket2.git", branch = "arceos" }
