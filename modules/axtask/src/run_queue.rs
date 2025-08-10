@@ -5,10 +5,10 @@ use core::mem::MaybeUninit;
 #[cfg(feature = "smp")]
 use alloc::sync::Weak;
 
+use axsched::BaseScheduler;
 use kernel_guard::BaseGuard;
 use kspin::SpinRaw;
 use lazyinit::LazyInit;
-use scheduler::BaseScheduler;
 
 use axhal::percpu::this_cpu_id;
 
@@ -494,6 +494,8 @@ impl AxRunQueue {
                 }
             }
             // TODO: priority
+            #[cfg(feature = "smp")]
+            task.set_cpu_id(self.cpu_id as _);
             self.scheduler.lock().put_prev_task(task, preempt);
             true
         } else {

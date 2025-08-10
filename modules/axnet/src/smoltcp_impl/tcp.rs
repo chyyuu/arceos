@@ -74,7 +74,6 @@ impl TcpSocket {
 
     /// Returns the local address and port, or
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
-    #[inline]
     pub fn local_addr(&self) -> AxResult<SocketAddr> {
         match self.get_state() {
             STATE_CONNECTED | STATE_LISTENING => {
@@ -86,7 +85,6 @@ impl TcpSocket {
 
     /// Returns the remote address and port, or
     /// [`Err(NotConnected)`](AxError::NotConnected) if not connected.
-    #[inline]
     pub fn peer_addr(&self) -> AxResult<SocketAddr> {
         match self.get_state() {
             STATE_CONNECTED | STATE_LISTENING => {
@@ -341,6 +339,45 @@ impl TcpSocket {
                 readable: false,
                 writable: false,
             }),
+        }
+    }
+
+    /// Checks if Nagle's algorithm is enabled for this TCP socket.
+    pub fn nodelay(&self) -> AxResult<bool> {
+        if let Some(h) = unsafe { self.handle.get().read() } {
+            Ok(SOCKET_SET.with_socket::<tcp::Socket, _, _>(h, |socket| socket.nagle_enabled()))
+        } else {
+            ax_err!(NotConnected, "socket is not connected")
+        }
+    }
+
+    /// Enables or disables Nagle's algorithm for this TCP socket.
+    pub fn set_nodelay(&self, enabled: bool) -> AxResult<()> {
+        if let Some(h) = unsafe { self.handle.get().read() } {
+            SOCKET_SET.with_socket_mut::<tcp::Socket, _, _>(h, |socket| {
+                socket.set_nagle_enabled(enabled);
+            });
+            Ok(())
+        } else {
+            ax_err!(NotConnected, "socket is not connected")
+        }
+    }
+
+    /// Returns the maximum capacity of the receive buffer in bytes.
+    pub fn recv_capacity(&self) -> AxResult<usize> {
+        if let Some(h) = unsafe { self.handle.get().read() } {
+            Ok(SOCKET_SET.with_socket::<tcp::Socket, _, _>(h, |socket| socket.recv_capacity()))
+        } else {
+            ax_err!(NotConnected, "socket is not connected")
+        }
+    }
+
+    /// Returns the maximum capacity of the send buffer in bytes.
+    pub fn send_capacity(&self) -> AxResult<usize> {
+        if let Some(h) = unsafe { self.handle.get().read() } {
+            Ok(SOCKET_SET.with_socket::<tcp::Socket, _, _>(h, |socket| socket.send_capacity()))
+        } else {
+            ax_err!(NotConnected, "socket is not connected")
         }
     }
 }
