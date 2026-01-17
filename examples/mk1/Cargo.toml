@@ -1,0 +1,19 @@
+[package]
+name = "arceos-mk1"
+version = "0.1.0"
+edition.workspace = true
+authors = ["ArceOS Contributors"]
+description = "A minimal monolithic kernel example with sys_write and sys_exit syscalls"
+
+[dependencies]
+axstd = { workspace = true, optional = true }
+axhal = { workspace = true }
+axmm = { workspace = true }
+axconfig = { workspace = true }
+memory_addr = { workspace = true }
+page_table_multiarch = { workspace = true }
+log = { workspace = true }
+
+[features]
+default = ["axstd"]
+axstd = ["dep:axstd"]
