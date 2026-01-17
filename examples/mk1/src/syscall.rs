@@ -9,9 +9,34 @@ use memory_addr::{MemoryAddr, VirtAddr, PAGE_SIZE_4K};
 
 use crate::loader::UserAddrSpace;
 
-/// Linux system call numbers for RISC-V64
-const SYS_WRITE: usize = 64;
-const SYS_EXIT: usize = 93;
+// Linux system call numbers differ by architecture
+// Reference: https://chromium.googlesource.com/chromiumos/docs/+/master/constants/syscalls.md
+
+#[cfg(target_arch = "x86_64")]
+mod syscall_num {
+    pub const SYS_WRITE: usize = 1;
+    pub const SYS_EXIT: usize = 60;
+}
+
+#[cfg(target_arch = "aarch64")]
+mod syscall_num {
+    pub const SYS_WRITE: usize = 64;
+    pub const SYS_EXIT: usize = 93;
+}
+
+#[cfg(target_arch = "riscv64")]
+mod syscall_num {
+    pub const SYS_WRITE: usize = 64;
+    pub const SYS_EXIT: usize = 93;
+}
+
+#[cfg(target_arch = "loongarch64")]
+mod syscall_num {
+    pub const SYS_WRITE: usize = 64;
+    pub const SYS_EXIT: usize = 93;
+}
+
+use syscall_num::{SYS_WRITE, SYS_EXIT};
 
 /// Standard file descriptors
 const STDOUT: usize = 1;

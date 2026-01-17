@@ -1,9 +1,16 @@
-//! mk1 - A Minimal Monolithic Kernel
+//! mk1 - A Minimal Cross-Platform Monolithic Kernel
 //!
 //! This is a minimal monolithic kernel example that demonstrates:
 //! - User/kernel space separation
 //! - System call handling (sys_write and sys_exit)
 //! - Running a simple user program that prints "Hello, world!"
+//!
+//! # Supported Architectures
+//!
+//! - riscv64 (RISC-V 64-bit)
+//! - x86_64 (Intel/AMD 64-bit)
+//! - aarch64 (ARM 64-bit)
+//! - loongarch64 (LoongArch 64-bit)
 //!
 //! # Architecture
 //!
@@ -12,7 +19,7 @@
 //! |    User Space     |
 //! |  (hello program)  |
 //! +-------------------+
-//!         | ecall
+//!         | syscall (ecall/syscall/svc)
 //!         v
 //! +-------------------+
 //! |   Kernel Space    |
@@ -34,10 +41,23 @@ mod syscall;
 use axhal::uspace::{UserContext, ReturnReason};
 use loader::{UserAddrSpace, USER_ENTRY, USER_STACK_TOP};
 
+/// Get the current architecture name
+fn arch_name() -> &'static str {
+    #[cfg(target_arch = "riscv64")]
+    { "riscv64" }
+    #[cfg(target_arch = "x86_64")]
+    { "x86_64" }
+    #[cfg(target_arch = "aarch64")]
+    { "aarch64" }
+    #[cfg(target_arch = "loongarch64")]
+    { "loongarch64" }
+}
+
 /// The main entry point of the mk1 kernel
 #[cfg_attr(feature = "axstd", unsafe(no_mangle))]
 fn main() {
     println!("=== mk1: Minimal Monolithic Kernel ===");
+    println!("Architecture: {}", arch_name());
     println!("Starting mk1 kernel...");
 
     // Create user address space and load the user program

@@ -10,10 +10,13 @@ axstd = { workspace = true, optional = true }
 axhal = { workspace = true }
 axmm = { workspace = true }
 axconfig = { workspace = true }
+axfeat = { workspace = true }
 memory_addr = { workspace = true }
 page_table_multiarch = { workspace = true }
 log = { workspace = true }
 
 [features]
-default = ["axstd"]
+default = ["axstd", "uspace", "paging"]
 axstd = ["dep:axstd"]
+uspace = ["axfeat/uspace"]
+paging = ["axfeat/paging"]
