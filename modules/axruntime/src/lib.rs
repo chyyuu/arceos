@@ -86,10 +86,11 @@ impl axlog::LogIf for LogIfImpl {
 
 use core::sync::atomic::{AtomicUsize, Ordering};
 
+/// Number of CPUs that have completed initialization.
 static INITED_CPUS: AtomicUsize = AtomicUsize::new(0);
 
 fn is_init_ok() -> bool {
-    INITED_CPUS.load(Ordering::Acquire) == axconfig::plat::CPU_NUM
+    INITED_CPUS.load(Ordering::Acquire) == axhal::cpu_num()
 }
 
 /// The main entry point of the ArceOS runtime.
@@ -116,14 +117,12 @@ pub fn rust_main(cpu_id: usize, arg: usize) -> ! {
         target = {}\n\
         build_mode = {}\n\
         log_level = {}\n\
-        smp = {}\n\
         ",
         axconfig::ARCH,
         axconfig::PLATFORM,
         option_env!("AX_TARGET").unwrap_or(""),
         option_env!("AX_MODE").unwrap_or(""),
         option_env!("AX_LOG").unwrap_or(""),
-        axconfig::plat::CPU_NUM,
     );
     #[cfg(feature = "rtc")]
     ax_println!(
@@ -263,6 +262,11 @@ fn init_interrupt() {
         update_timer();
         #[cfg(feature = "multitask")]
         axtask::on_timer_tick();
+    });
+
+    #[cfg(feature = "ipi")]
+    axhal::irq::register(axhal::irq::IPI_IRQ, || {
+        axipi::ipi_handler();
     });
 
     // Enable IRQs before starting app

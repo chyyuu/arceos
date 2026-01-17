@@ -38,6 +38,7 @@ docker build -t arceos -f Dockerfile .
 ```
 
 Create a container and build/run app:
+
 ```bash
 docker run -it -v $(pwd):/arceos -w /arceos arceos bash
 
@@ -46,6 +47,7 @@ make A=examples/helloworld ARCH=aarch64 run
 ```
 
 ### Manually Build and Run
+
 #### 1. Install Build Dependencies
 
 Install [cargo-binutils](https://github.com/rust-embedded/cargo-binutils) to use `rust-objcopy` and `rust-objdump` tools, and [axconfig-gen](https://github.com/arceos-org/axconfig-gen) for kernel configuration, and [cargo-axplat](https://github.com/arceos-org/axplat_crates/tree/dev/cargo-axplat) for platform configuration:
@@ -214,4 +216,4 @@ axhal = { git = "https://github.com/arceos-org/arceos.git", tag = "v0.2.0" } # m
 
 ## Design
 
-![](doc/figures/ArceOS.svg)
+![ArceOS logo](doc/figures/ArceOS.svg)

@@ -1,13 +1,13 @@
 # Introduction
 
-This article describes a way to debug jtags via openocd, gdb, jlink debugger. 
+This article describes a way to debug jtags via openocd, gdb, jlink debugger.
 
-## Requirement 
+## Requirement
 
 ### Resources
 
-1. Authors using [H-JLINK v9 type c Universal ARM Downloader](https://m.tb.cn/h.5FpduM7jUbbFlzo?tk=Z6t5WlsfPtl), 
-but theoretically, you can use whatever you want. 
+1. Authors using [H-JLINK v9 type c Universal ARM Downloader](https://m.tb.cn/h.5FpduM7jUbbFlzo?tk=Z6t5WlsfPtl),
+but theoretically, you can use whatever you want.
 
 2. [Serial USB to TTL CH340 Module](https://www.amazon.com/HiLetgo-Module-Microcontroller-Download-Serial/dp/B00LZV1G6K/ref=sr_1_3?dib=eyJ2IjoiMSJ9.EVDg6VSjpenXHkAOIddkejC8NrNLBaiI9YKosxxcvxsvWHCkJuYWT97oslmx7iE-il7I7ilkI07pfXYrJnjb0-gM8hu4y8_hMEVA7hiUtPZtjhovoAeF0-L7rM0xTe-hdNscYjbIspct3yjOtYSF9QPNFmr9XmeC5Os2gCQxZihglIJJDxUWWAhJL_MNl06dDKZnk82pkR_p09laqdfg0nFMwJwdxLDObHv3gzDHWNk.pvOBDJ9aVLFwecXlCYuMONK54Z_7sxnzAvdO71qkHWI&dib_tag=se&keywords=CH340&qid=1709218438&sr=8-3)
 
@@ -15,106 +15,48 @@ but theoretically, you can use whatever you want.
 
 4. A laptop
 
-### Preliminary preparation 
+### Preliminary preparation
 
 1. Connect CH304 from [bcm2711 pin 8,10,12](https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-reduced-schematics.pdf) (Rx to Tx, Tx to Rx, GND to GND).
     By the ways, power indicator closest to 1.
 
 2. Connect H-JLINK based on the picture below:
+    ![connect_jtag_debugger](./figures/image_jtag_connected.jpg)
 
-![connect_jtag_debugger](./figures/image_jtag_connected.jpg)
-<table>
-    <thead> <tr>
-            <th>GPIO #</th> <th>Name</th> <th>JTAG #</th> <th>Note</th> <th width="60%">Diagram</th>
-    </tr> </thead>
-    <tbody>
-        <tr>
-            <td></td>
-            <td>VTREF</td>
-            <td>1</td>
-            <td>to 3.3V</td>
-            <td rowspan="8"><img src="../doc/09_wiring_jtag.png"></td>
-        </tr>
-        <tr>
-            <td></td>
-            <td>GND</td>
-            <td>4</td>
-            <td>to GND</td>
-        </tr>
-        <tr>
-            <td>22</td>
-            <td>TRST</td>
-            <td>3</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>26</td>
-            <td>TDI</td>
-            <td>5</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>27</td>
-            <td>TMS</td>
-            <td>7</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>25</td>
-            <td>TCK</td>
-            <td>9</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>23</td>
-            <td>RTCK</td>
-            <td>11</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>24</td>
-            <td>TDO</td>
-            <td>13</td>
-            <td></td>
-        </tr>
-    </tbody>
-</table>
-<p align="center"><img src="./figures/draw_jtag_connected.jpg" width="50%"></p>
-*thanks for andre-richter provide this sections.*
+    | GPIO # | Name  | JTAG # | Note    |
+    |--------|-------|--------|---------|
+    |        | VTREF | 1      | to 3.3V |
+    |        | GND   | 4      | to GND  |
+    | 22     | TRST  | 3      |         |
+    | 26     | TDI   | 5      |         |
+    | 27     | TMS   | 7      |         |
+    | 25     | TCK   | 9      |         |
+    | 23     | RTCK  | 11     |         |
+    | 24     | TDO   | 13     |         |
 
-3. Try to test whether chainboot works properly 
+    <p align="center"><img src="./figures/draw_jtag_connected.jpg" width="50%" align="center"></p>
+
+    *thanks for andre-richter provide this sections.*
+
+3. Try to test whether chainboot works properly
     1. go to tools/raspi4/chainloader
     2. run `make clean && make`, it should generate a kernel8.img under this directory.
     if everything right, the image file should be 8576 via `ls -al`.
     3. move this image into your sd card.
-    4. check if your sd card has contians following file 
-    [start4.elf](https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/start4.elf), 
-    [fixup4.dat](https://github.com/raspberrypi/firmware/raw/master/boot/fixup4.dat), 
+    4. check if your sd card has contains following file
+    [start4.elf](https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/start4.elf),
+    [fixup4.dat](https://github.com/raspberrypi/firmware/raw/master/boot/fixup4.dat),
     [bcm2711-rpi-4-b.dtb](https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/bcm2711-rpi-4-b.dtb)
     5. just run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi chainboot`, then should display this image.
 
-    <table>
-    <thead> <tr>
-        <th>Minipush 1.0<br><br><br><br><br><br>[MP] ⏳ Waiting for /dev/ttyUSB0</th>
-        <th>[MP] ✅ Serial connected<br><br><br>[MP]  Please power the target now</th>
-        <th></th>
-        <th></th>
-        <th></th>
-    </tr> </thead>
-    <tbody>
-      <tr>
-        <td>This means that CH340 is not connected or connected in some other way</td>
-        <td>connection is successful<br></td>
-        <td></td> <td></td> <td></td> </tr>
-      <tr>
-        <td>maybe /dev/ttyUSB1 or something else</td>
-        <td></td> <td></td> <td></td> <td></td> </tr>
-    </tbody>
-    </table>
+    | Status | Description |
+    |--------|-------------|
+    | `Minipush 1.0`<br><br>`[MP] ⏳ Waiting for /dev/ttyUSB0` | This means that CH340 is not connected or connected in some other way<br>maybe /dev/ttyUSB1 or something else |
+    | `[MP] ✅ Serial connected`<br>`[MP] Please power the target now` | connection is successful |
 
     After power up the board:
 
-    ```
+    ```text
            
      __  __ _      _ _                 _
     |  \/  (_)_ _ (_) |   ___  __ _ __| |
@@ -152,33 +94,33 @@ but theoretically, you can use whatever you want.
 
 ## Run
 
-### Preliminary preparation 
+### Preliminary preparation
 
-    1. go to tools/raspi4/chainloader
-    2. run `make clean && make JTAG=y`, it should generate a kernel8.img under this directory.
-    if everything right, the image file should be 8576 via `ls -al`.
-    3. move this image into your sd card.
-    4. check if your sd card has contians following file 
-    [start4.elf](https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/start4.elf), 
-    [fixup4.dat](https://github.com/raspberrypi/firmware/raw/master/boot/fixup4.dat), 
-    [bcm2711-rpi-4-b.dtb](https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/bcm2711-rpi-4-b.dtb)
+1. go to tools/raspi4/chainloader
+2. run `make clean && make JTAG=y`, it should generate a kernel8.img under this directory.
+if everything right, the image file should be 8576 via `ls -al`.
+3. move this image into your sd card.
+4. check if your sd card has contains following file 
+[start4.elf](https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/start4.elf),
+[fixup4.dat](https://github.com/raspberrypi/firmware/raw/master/boot/fixup4.dat),
+[bcm2711-rpi-4-b.dtb](https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/bcm2711-rpi-4-b.dtb)
 
 ### Start Debugging
 
-    1. just run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi chainboot` and Power up the board., then should display this image.
+1. just run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi chainboot` and Power up the board., then should display this image.
 
-    ```
+    ```text
     Minipush 1.0
 
     [MP] ✅ Serial connected
     [MP] 🔌 Please power the target now
 
-     __  __ _      _ _                 _
+        __  __ _      _ _                 _
     |  \/  (_)_ _ (_) |   ___  __ _ __| |
     | |\/| | | ' \| | |__/ _ \/ _` / _` |
     |_|  |_|_|_||_|_|____\___/\__,_\__,_|
 
-               Raspberry Pi 4            
+                Raspberry Pi 4            
 
     [ML] Requesting binary
     [MP] ⏩ Pushing 36 KiB =========================================🦀 100% 0 KiB/s Time: 00:00:00
@@ -196,16 +138,15 @@ but theoretically, you can use whatever you want.
     @ 7. load                           @
     @ 8. continue                       @
     @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
     ```
 
     *the following guidelines is basically like previous datasheets, In fact, if you're a senior developer, skip the following. XD*
-    3. My personal suggestions is using zellij, but you could choice what ever you want.
-    4. A: Keeping this miniload running (just don't terminate it) in terminal A.
-    5. B: run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi openocd`, 
-    the windows should display following, but it doesn't matter, we don't need to care about this.
 
-    ```
+2. My personal suggestions is using zellij, but you could choice what ever you want.
+3. A: Keeping this miniload running (just don't terminate it) in terminal A.
+4. B: run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi openocd`, the windows should display following, but it doesn't matter, we don't need to care about this.
+
+    ```bash
     $ make A=examples/helloworld MYPLAT=axplat-aarch64-raspi openocd  
 
     Launching OpenOCD
@@ -238,18 +179,17 @@ but theoretically, you can use whatever you want.
     Info : Listening on port 3335 for gdb connections
     Info : starting gdb server for rpi4.core3 on 3336
     Info : Listening on port 3336 for gdb connections
-
     ```
 
-    6. C: run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi gdb` in terminal C.
-    7. You are now in GDB, but just don't start your debug immediately.
-    Because the use of minipush script, we could simple push our image to board before power up the board.
-    Like a double-edged sword. It also constrains our behavior, 
-    which it's incapable for us to power up the board then use some kinds like halt command to halt the CPU. 
-    (I think it can be done through script modification, but now there is no time to study and change ruby for a trivial upgrade.)
-    So we add a dead loop at the end of the image we generate lastest.
-    
-    ```gdb
+5. C: run `make A=examples/helloworld MYPLAT=axplat-aarch64-raspi gdb` in terminal C.
+6. You are now in GDB, but just don't start your debug immediately.
+Because the use of minipush script, we could simple push our image to board before power up the board.
+Like a double-edged sword. It also constrains our behavior,
+which it's incapable for us to power up the board then use some kinds like halt command to halt the CPU.
+(I think it can be done through script modification, but now there is no time to study and change ruby for a trivial upgrade.)
+So we add a dead loop at the end of the image we generate lastest.
+
+    ```text
     (gdb) target extended-remote :3333  // connect to openocd gdb serve
                                         // you should see $pc=0x2080db4 
     (gdb) set $pc=0x80000   // The following behavior is unnecessary and can be debugged normally.
@@ -271,6 +211,4 @@ but theoretically, you can use whatever you want.
 2. [Raspberry Pi 4をJTAGデバッグしてみる（FTDI C232HM-DDHSL-0使用）](https://hikalium.hatenablog.jp/entry/2021/07/18/214013)
 3. [Rust Raspberry Pi OS tutorials 08 HW debug JTAG by hikalium 2021-09-20](https://www.youtube.com/watch?v=6ULvzK1Drgo&t=21s)
 4. [my record](https://bitbucket.org/jackyliu16/blog/src/master/content/jtag-load-failure-debug.cn.md)
-4. openocd docs, bcm2711 docs, gdb docs ... etc.
-
-
+5. openocd docs, bcm2711 docs, gdb docs ... etc.
