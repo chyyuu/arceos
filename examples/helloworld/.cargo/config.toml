@@ -1,0 +1,14 @@
+# Cargo configuration for running ArceOS helloworld with `cargo run`
+
+[build]
+target = "riscv64gc-unknown-none-elf"
+
+[env]
+# Set the ArceOS config file path (relative to this config file's directory)
+AX_CONFIG_PATH = { value = "axconfig.toml", relative = true }
+
+[target.riscv64gc-unknown-none-elf]
+# Use our custom runner script to convert ELF to bin and run in QEMU
+runner = "bash run-qemu.sh"
+
+# Note: Link arguments are set dynamically in build.rs to handle debug/release profiles correctly
