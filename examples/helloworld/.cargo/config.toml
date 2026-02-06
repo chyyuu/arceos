@@ -1,7 +1,12 @@
-# Cargo configuration for running ArceOS helloworld with `cargo run`
-
-[build]
-target = "riscv64gc-unknown-none-elf"
+# Cargo configuration for running ArceOS helloworld
+#
+# To run on ArceOS (QEMU), use:
+#   cargo run --target riscv64gc-unknown-none-elf --features axstd
+#
+# To run as a normal program:
+#   cargo run
+#
+# Note: Do not set a default [build] target here, as it would break `cargo publish`.
 
 [env]
 # Set the ArceOS config file path (relative to this config file's directory)

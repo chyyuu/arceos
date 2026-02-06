@@ -1,13 +1,26 @@
 [package]
 name = "arceos-helloworld"
 version = "0.1.0"
-edition.workspace = true
+edition = "2024"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
+description = "A simple Hello World example for ArceOS"
+license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
+repository = "https://github.com/arceos-org/arceos"
+homepage = "https://github.com/arceos-org/arceos"
+keywords = ["arceos", "os", "kernel", "example"]
+categories = ["no-std", "embedded"]
+readme = "README.md"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# Exclude ArceOS-specific files from the published crate
+exclude = [
+    "axconfig.toml",
+    "run-qemu.sh",
+    ".cargo/",
+]
 
 [features]
-default = ["axstd"]
-
-[dependencies]
-axstd = { workspace = true, optional = true, features = ["defplat", "log-level-warn"] }
+default = []
+# The 'axstd' feature enables ArceOS support (no_std + no_main).
+# Note: When building from the ArceOS repository with `make`, axstd is
+# automatically provided. For standalone use, see README.md.
+axstd = []
